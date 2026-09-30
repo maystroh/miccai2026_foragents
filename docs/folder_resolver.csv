@@ -1,5 +1,5 @@
 path,parent,type,purpose,key_files,notes
-.,,project root,Repository entry point,AGENTS.md;PROJECT_MEMORY.md,Start here for project conventions and current state
+.,,project root,Repository entry point,AGENTS.md;docs/PROJECT_MEMORY.md,Start here for project conventions and current state
 Published_papers,.,dataset,Published MICCAI paper indexes by modality,README.md;deduplication_map.csv,One retained row per unique paper URL
 Published_papers/CT-XRay,Published_papers,modality folder,CT and X-ray paper index,papers_links.csv,
 Published_papers/Computational_imagings,Published_papers,modality folder,Computational-imaging paper index,papers_links.csv,
