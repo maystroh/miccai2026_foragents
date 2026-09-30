@@ -16,6 +16,15 @@ initial reviewer consensus was weak.
 
 ![Reviewer acceptance versus primary AC decision](reports/review_acceptance/all_papers.png)
 
+An interesting pattern is the strong dependence of the AC decision on the
+reviewer consensus: **99.09%** of papers with one accepting reviewer were sent
+to rebuttal (**217/219**), compared with **80.56%** with two accepting reviewers
+(**522/648**) and **13.45%** with three accepting reviewers (**39/290**). This
+steep decline suggests a substantial human judgment factor in AC decisions:
+rebuttal is used most often when reviewer support is divided, while broad
+reviewer agreement usually leads directly to acceptance. These are descriptive
+associations, not evidence that reviewer counts alone caused the AC decision.
+
 Four papers received no accepting score from any reviewer, yet the primary AC
 decision was **Invite for Rebuttal** for all four:
 
