@@ -1,0 +1,47 @@
+path,parent,type,purpose,key_files,notes
+.,,project root,Repository entry point,AGENTS.md;PROJECT_MEMORY.md,Start here for project conventions and current state
+Published_papers,.,dataset,Published MICCAI paper indexes by modality,README.md;deduplication_map.csv,One retained row per unique paper URL
+Published_papers/CT-XRay,Published_papers,modality folder,CT and X-ray paper index,papers_links.csv,
+Published_papers/Computational_imagings,Published_papers,modality folder,Computational-imaging paper index,papers_links.csv,
+Published_papers/Diffusion-MRI,Published_papers,modality folder,Diffusion MRI paper index,papers_links.csv,
+Published_papers/EHR,Published_papers,modality folder,EHR-related paper index,papers_links.csv,
+Published_papers/Endoscopy,Published_papers,modality folder,Endoscopy paper index,papers_links.csv,
+Published_papers/Func_MRI,Published_papers,modality folder,Functional MRI paper index,papers_links.csv,
+Published_papers/Histology,Published_papers,modality folder,Histology paper index,papers_links.csv,
+Published_papers/MRI,Published_papers,modality folder,Primary MRI paper index,papers_links.csv,Main MRI analysis entry point
+Published_papers/Microscopy,Published_papers,modality folder,Microscopy paper index,papers_links.csv,
+Published_papers/Multimodals,Published_papers,modality folder,Multimodal paper index,papers_links.csv,
+Published_papers/Others,Published_papers,modality folder,Other or mixed-modality paper index,papers_links.csv,
+Published_papers/PET_SPECT,Published_papers,modality folder,PET and SPECT paper index,papers_links.csv,
+Published_papers/Photo_video,Published_papers,modality folder,Photograph and video paper index,papers_links.csv,
+Published_papers/Physio-signals,Published_papers,modality folder,Physiological-signal paper index,papers_links.csv,
+Published_papers/Robotics,Published_papers,modality folder,Medical-robotics paper index,papers_links.csv,
+Published_papers/Sensors,Published_papers,modality folder,Sensor-based paper index,papers_links.csv,
+Published_papers/Spectroscopy,Published_papers,modality folder,Spectroscopy paper index,papers_links.csv,
+Published_papers/ultrasounds,Published_papers,modality folder,Ultrasound paper index,papers_links.csv,
+Published_reviews,.,dataset,Review and acceptance records by modality,README.md;deduplication_map.csv,One retained review row per unique paper URL
+Published_reviews/CT-XRay,Published_reviews,modality folder,CT and X-ray reviews,reviews.csv,
+Published_reviews/Computational_imagings,Published_reviews,modality folder,Computational-imaging reviews,reviews.csv,
+Published_reviews/Diffusion-MRI,Published_reviews,modality folder,Diffusion MRI reviews,reviews.csv,
+Published_reviews/EHR,Published_reviews,modality folder,EHR-related reviews,reviews.csv,
+Published_reviews/Endoscopy,Published_reviews,modality folder,Endoscopy reviews,reviews.csv,
+Published_reviews/Func_MRI,Published_reviews,modality folder,Functional MRI reviews,reviews.csv,
+Published_reviews/Histology,Published_reviews,modality folder,Histology reviews,reviews.csv,
+Published_reviews/MRI,Published_reviews,modality folder,Primary MRI reviews,reviews.csv,
+Published_reviews/Microscopy,Published_reviews,modality folder,Microscopy reviews,reviews.csv,
+Published_reviews/Multimodals,Published_reviews,modality folder,Multimodal reviews,reviews.csv,
+Published_reviews/Others,Published_reviews,modality folder,Other or mixed-modality reviews,reviews.csv,
+Published_reviews/PET_SPECT,Published_reviews,modality folder,PET and SPECT reviews,reviews.csv,
+Published_reviews/Photo_video,Published_reviews,modality folder,Photograph and video reviews,reviews.csv,
+Published_reviews/Physio-signals,Published_reviews,modality folder,Physiological-signal reviews,reviews.csv,
+Published_reviews/Robotics,Published_reviews,modality folder,Medical-robotics reviews,reviews.csv,
+Published_reviews/Sensors,Published_reviews,modality folder,Sensor-based reviews,reviews.csv,
+Published_reviews/Spectroscopy,Published_reviews,modality folder,Spectroscopy reviews,reviews.csv,
+Published_reviews/ultrasounds,Published_reviews,modality folder,Ultrasound reviews,reviews.csv,
+deepbreath,.,dataset,Breast-imaging paper corpus,plan_workshop_2.jpg;plan_workshop_3.jpg,Organized by presentation track and topic
+deepbreath/orals,deepbreath,track folder,Oral-presentation breast papers,diagnosis_prediction/;segmentation/,
+deepbreath/posters,deepbreath,track folder,Poster-presentation breast papers,diagnosis_prediction/;segmentation/,
+deepbreath/unclassified,deepbreath,track folder,Unclassified breast papers,,
+medagent,.,dataset,Medical-agent paper corpus,*.pdf,Use filenames as source identifiers until metadata is extracted
+reports,.,output folder,Generated analyses and figures,review_acceptance/,
+reports/review_acceptance,reports,report folder,Review acceptance summaries and plots,acceptance_summary.csv;all_papers.png,Generated report artifacts

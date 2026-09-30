@@ -1,0 +1,19 @@
+# Protected working datasets: keep these folders local and out of Git.
+/deepbreath/
+/medagent/
+
+# Local Python and environment artifacts.
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.env
+
+# Research files that should remain outside version control.
+*.pdf
+*.nii
+*.nii.gz
+*.dcm
+*.ckpt
+*.pth
