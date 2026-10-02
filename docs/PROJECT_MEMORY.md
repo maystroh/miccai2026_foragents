@@ -2,10 +2,10 @@
 
 ## Scope
 
-This project analyzes MICCAI 2026 medical-imaging papers, with classification
-and segmentation of MRI volumes as the main focus and breast MRI as a priority
-for deeper analysis. General findings should remain separate from breast-
-specific synthesis.
+This project maps MICCAI 2026 medical-imaging papers, reviews, and shared
+research artifacts across modalities and clinical applications. Public
+summaries should treat all modalities consistently. Local research priorities
+are stored separately in the Git-ignored `docs/LOCAL_RESEARCH_INTERESTS.md`.
 
 ## Current repository state
 

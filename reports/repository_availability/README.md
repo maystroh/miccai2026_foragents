@@ -1,6 +1,6 @@
 # Repository-link availability in the published-paper index
 
-Snapshot generated: 2026-10-02T10:33:42+00:00
+Snapshot generated: 2026-10-02T10:46:38+00:00
 
 The local published-paper corpus contains 1,161 unique papers, identified by paper_url.
 The overall denominator counts each paper once. Modality denominators reconstruct original
@@ -26,8 +26,6 @@ repository from a missing one. Network errors, authentication, and rate limits r
 ![Overall repository availability](overall_availability.png)
 
 ![Repository availability by original modality](availability_by_modality.png)
-
-[Overall chart (SVG)](overall_availability.svg) · [Modality chart (SVG)](availability_by_modality.svg)
 
 ## Other artifact links
 

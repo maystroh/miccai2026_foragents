@@ -1,6 +1,7 @@
 # Protected working datasets: keep these folders local and out of Git.
 /deepbreath/
 /medagent/
+/docs/LOCAL_RESEARCH_INTERESTS.md
 
 # Local Python and environment artifacts.
 __pycache__/

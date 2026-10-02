@@ -210,7 +210,6 @@ def write_outputs(rows: list[dict[str, str]], output: Path) -> None:
         "## Visual summary", "",
         "![Overall repository availability](overall_availability.png)", "",
         "![Repository availability by original modality](availability_by_modality.png)", "",
-        "[Overall chart (SVG)](overall_availability.svg) · [Modality chart (SVG)](availability_by_modality.svg)", "",
         "## Other artifact links", "",
         "![What other artifact links provide access to](other_artifact_access.png)", "",
         "The 16 links comprise 12 project websites, one model hub, one dataset hub,",

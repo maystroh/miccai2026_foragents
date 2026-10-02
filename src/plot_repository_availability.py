@@ -108,7 +108,7 @@ def plot_modalities(rows: list[dict[str, str]], output: Path, checked_date: str)
     fig.subplots_adjust(left=0.19, right=0.91, top=0.81, bottom=0.26, wspace=0.2)
     fig.text(0.045, 0.95, "Repository availability by original modality", fontsize=23, weight="bold", color="#233644")
     fig.text(0.045, 0.9, "Compare coverage on the left and the number of accessible repository pages on the right.", fontsize=12, color="#596C79")
-    fig.text(0.045, 0.865, "MRI: 227 / 302 papers (75.2%)  ·  Overall: 828 / 1,161 unique papers (71.3%)", fontsize=13, color="#167D9A", weight="bold")
+    fig.text(0.045, 0.865, "Overall: 828 / 1,161 unique papers (71.3%) have accessible repository pages", fontsize=13, color="#167D9A", weight="bold")
     offsets = [0.0] * len(names)
     for key, label, color in STATUSES:
         values = [100 * counts[name][key] / len(groups[name]) for name in names]
@@ -119,13 +119,9 @@ def plot_modalities(rows: list[dict[str, str]], output: Path, checked_date: str)
         coverage.text(rate / 2, index, f"{rate:.1f}%", color="white", ha="center", va="center", fontsize=10, weight="bold")
         value = counts[name]["accessible"]
         volume.barh(index, value, height=0.68, color="#167D9A")
-        volume.text(value + 4, index, f"{value} / {len(groups[name])}", va="center", color="#233644", fontsize=10, weight="bold" if name == "MRI" else "normal")
+        volume.text(value + 4, index, f"{value} / {len(groups[name])}", va="center", color="#233644", fontsize=10)
     coverage.set_yticks(positions, [LABELS.get(name, name) for name in names])
     coverage.invert_yaxis()
-    for tick, name in zip(coverage.get_yticklabels(), names):
-        if name == "MRI":
-            tick.set_color("#167D9A")
-            tick.set_weight("bold")
     coverage.set_xlim(0, 100)
     coverage.xaxis.set_major_formatter(PercentFormatter())
     coverage.set_xlabel("Share of papers in each modality", labelpad=12)
