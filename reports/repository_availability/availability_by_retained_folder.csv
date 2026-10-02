@@ -1,0 +1,20 @@
+modality,papers,listed_code_links,code_url_field_links,abstract_only_links,listed_code_link_percent,repository_host_links,repository_host_link_percent,other_artifact_links,no_listed_link,accessible_repository_pages,unavailable_public_links,unresolved_link_checks
+Overall (unique papers),1161,885,853,32,76.23,869,74.85,16,276,828,39,2
+CT-XRay,374,288,279,9,77.01,278,74.33,10,86,265,11,2
+Computational_imagings,21,16,16,0,76.19,15,71.43,1,5,15,0,0
+Diffusion-MRI,20,13,13,0,65.0,13,65.0,0,7,12,1,0
+EHR,18,15,13,2,83.33,15,83.33,0,3,14,1,0
+Endoscopy,81,63,60,3,77.78,62,76.54,1,18,59,3,0
+Func_MRI,36,29,27,2,80.56,29,80.56,0,7,25,4,0
+Histology,97,75,73,2,77.32,73,75.26,2,22,69,4,0
+MRI,186,146,143,3,78.49,146,78.49,0,40,139,7,0
+Microscopy,37,30,27,3,81.08,30,81.08,0,7,28,2,0
+Multimodals,13,10,10,0,76.92,10,76.92,0,3,10,0,0
+Others,53,37,35,2,69.81,37,69.81,0,16,36,1,0
+PET_SPECT,14,9,8,1,64.29,9,64.29,0,5,9,0,0
+Photo_video,67,48,47,1,71.64,48,71.64,0,19,47,1,0
+Physio-signals,39,30,28,2,76.92,30,76.92,0,9,29,1,0
+Robotics,9,6,5,1,66.67,6,66.67,0,3,6,0,0
+Sensors,4,3,3,0,75.0,3,75.0,0,1,3,0,0
+Spectroscopy,2,1,1,0,50.0,1,50.0,0,1,1,0,0
+ultrasounds,90,66,65,1,73.33,64,71.11,2,24,61,3,0

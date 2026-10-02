@@ -1,0 +1,17 @@
+artifact_url,artifact_name,access_type,project_code_link_status,access_note,evidence_location,reviewed_on
+https://nubagcilab.github.io/BronchoAccess/,BronchoAccess,Project website,linked,Links labelled Code and HuggingFace; resource downloads not checked,Header resource links,2026-10-02
+https://bokai-zhao.github.io/SpaPath-benchboard/,SpaPath benchmark dashboard,Project website,not_identified,No code-labelled resource link identified in the public HTML scan; dashboard resource availability unconfirmed,Public HTML anchor scan,2026-10-02
+https://huggingface.co/raidium/curia-2,Curia-2,Model hub,not_applicable,Model card visible; file access requires login and accepting conditions; research-only license,Model access notice and license,2026-10-02
+https://keeplearning-again.github.io/EchoPilot/,EchoPilot,Project website,linked,Project page links to Code; no repository content inspection,Header Code link,2026-10-02
+https://lorenzopettinari.github.io/end-2-reg/,End2Reg,Project website,linked,Links to Code and SpineDepth/SpineAlign datasets; downloads not checked,Header resource links,2026-10-02
+https://miladmasroor.github.io/lhcf-project-page/,LHCF fairness project,Project website,coming_soon,Code labelled Coming Soon points to a placeholder anchor,Code (Coming Soon) anchor,2026-10-02
+https://pypi.org/project/clinical-cad/,clinical-cad,Installable package,not_applicable,PyPI package provides installation instructions and release files; also links to a source repository; package not installed,Installation and project links,2026-10-02
+https://comreg-page.github.io/,ComReg,Project website,linked,Code link points to https://github.com/luohwu/ComReg; destination contents not inspected,Public HTML Code anchor,2026-10-02
+https://seer-medseg.github.io/,SEER,Project website,linked,Links labelled Code and Model & Data; file accessibility not checked,Header resource links,2026-10-02
+https://www.codabench.org/competitions/16457/,SlideGuard,Benchmark portal,not_applicable,Codabench competition URL from index; browser returned unrelated text so competition contents and resources remain unverified,URL structure and inconclusive browser response,2026-10-02
+https://ssharvienkumar.github.io/SWoMo/,SWoMo,Project website,linked,Links to SWoMo/IntrekSAM code and HuggingFace; resource contents not inspected,Header resource links,2026-10-02
+https://itsabdulrahman.github.io/symmdiff/,SymmDiff,Project website,linked,Code link points to https://github.com/itsabdulrahman/symmdiff; destination contents not inspected,Public HTML Code anchor,2026-10-02
+https://huggingface.co/datasets/wanqi16/MIMIC-MTE,MIMIC-MTE,Dataset hub,not_applicable,Dataset page visible; README empty and viewer reports no supported data files; released usable dataset not established,Dataset card and viewer notice,2026-10-02
+https://track2map.github.io/,Track2Map,Project website,linked,Links to Code and a demonstration video; video not downloaded,Header Code link and Demo section,2026-10-02
+https://theodpzz.github.io/projects/unict/,UniCT,Project website,linked,Links to Code and Data; public benchmark references are not necessarily newly released datasets,Header resource links,2026-10-02
+https://healthx-lab.github.io/VesselSim,VesselSim,Project website,linked,Links to generated data on OSF and generation code; downloads not checked,Introductory resource paragraph,2026-10-02
