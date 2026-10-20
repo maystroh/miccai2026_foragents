@@ -6,6 +6,21 @@ research artifacts across modalities and clinical applications.
 See [AGENTS.md](AGENTS.md) for repository conventions and
 [docs/PROJECT_MEMORY.md](docs/PROJECT_MEMORY.md) for the current analysis state.
 
+## PDF to Markdown with LlamaCloud (optional)
+
+`src/llamacloud/` converts paper PDFs to Markdown with LlamaParse, keeping tables,
+LaTeX equations and headings that PyMuPDF's plain text loses.
+**Fill in the API key first:** copy `src/llamacloud/.env.example` to `.env` at the
+repository root and set `LLAMA_CLOUD_API_KEY` (optionally `LLAMA_CLOUD_API_KEY2`, `3`, ...
+for automatic rotation). Without a key, the parser exits immediately. Then run:
+
+```bash
+python -m src.llamacloud.parse_pdfs path/to/pdfs --out output/llamacloud --tier cost_effective
+```
+
+The `cost_effective` tier costs about 3 credits per page, roughly 30 per MICCAI paper.
+See [src/llamacloud/README.md](src/llamacloud/README.md) for tiers, outputs and credit tracking.
+
 ## Reviewer acceptance summary
 
 The chart below summarizes the number of reviewers assigning an accepting score
