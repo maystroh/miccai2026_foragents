@@ -1,1 +1,2 @@
 matplotlib>=3.7,<4
+llama-cloud>=1.4
