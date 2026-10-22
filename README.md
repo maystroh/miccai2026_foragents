@@ -8,8 +8,8 @@ See [AGENTS.md](AGENTS.md) for repository conventions and
 
 ## Research reasoning skills
 
-Three Codex skills help turn a paper into a concise briefing, an evidence audit,
-and a decisive follow-up experiment:
+Three reusable agent skills help turn a paper into a concise briefing, an
+evidence audit, and a decisive follow-up experiment:
 
 | Question | Skill |
 | --- | --- |
@@ -19,10 +19,10 @@ and a decisive follow-up experiment:
 
 ### Get started
 
-Ask your Codex agent to install the skills:
+Ask your agent to install the skills in its supported skill location:
 
 ```text
-Install the three miccai2026 skills from https://github.com/maystroh/miccai2026_foragents/tree/main/.agents/skills for use in all my Codex projects.
+Install the three miccai2026 skills from https://github.com/maystroh/miccai2026_foragents/tree/main/.agents/skills for use across my projects.
 ```
 
 Then ask for a skill by name and provide a paper URL or local path:
