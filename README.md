@@ -30,9 +30,9 @@ cd miccai2026_foragents
 In a Codex chat, ask for a skill by name and provide a paper or its stable ID:
 
 ```text
-Use the understand-paper-one-minute skill on papers/<paper-id>.
-Use the what-contribution-is-supported skill on papers/<paper-id>.
-Use the experiment-that-changes-conclusion skill on papers/<paper-id>.
+Use the understand-paper-one-minute skill on <paper URL or local path>.
+Use the what-contribution-is-supported skill on <paper URL or local path>.
+Use the experiment-that-changes-conclusion skill on <paper URL or local path>.
 ```
 
 In Codex CLI or the IDE extension, `/skills` lists available skills and `$` can
