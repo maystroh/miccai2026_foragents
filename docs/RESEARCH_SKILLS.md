@@ -6,9 +6,9 @@ These skills are small, reusable workflows for reading and reasoning about scien
 
 | Question | Skill | Main output |
 | --- | --- | --- |
-| Understand this paper in one minute. | [`understand-paper-one-minute`](../.agents/skills/understand-paper-one-minute/SKILL.md) | A short, sourced orientation |
-| What contribution is actually supported? | [`what-contribution-is-supported`](../.agents/skills/what-contribution-is-supported/SKILL.md) | A claim-to-evidence audit |
-| What experiment would change the conclusion? | [`experiment-that-changes-conclusion`](../.agents/skills/experiment-that-changes-conclusion/SKILL.md) | A decisive experiment and outcome map |
+| Understand this paper in one minute. | [`miccai2026-understand-paper-one-minute`](../.agents/skills/miccai2026-understand-paper-one-minute/SKILL.md) | A short, sourced orientation |
+| What contribution is actually supported? | [`miccai2026-what-contribution-is-supported`](../.agents/skills/miccai2026-what-contribution-is-supported/SKILL.md) | A claim-to-evidence audit |
+| What experiment would change the conclusion? | [`miccai2026-experiment-that-changes-conclusion`](../.agents/skills/miccai2026-experiment-that-changes-conclusion/SKILL.md) | A decisive experiment and outcome map |
 
 Use them as a sequence if helpful: **orient → audit → design a test**. A user can also invoke any skill alone, and each output should stand on its own.
 
