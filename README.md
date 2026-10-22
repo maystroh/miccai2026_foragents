@@ -35,28 +35,11 @@ Use the miccai2026-what-contribution-is-supported skill on <paper URL or local p
 Use the miccai2026-experiment-that-changes-conclusion skill on <paper URL or local path>.
 ```
 
-In Codex CLI or the IDE extension, `/skills` lists available skills and `$` can
-mention one directly, for example `$miccai2026-understand-paper-one-minute`. If a paper is
-not in the repository, provide a lawful copy or link. The skills state when
-their analysis is limited to an abstract or metadata.
+To install the skills for use in any Codex project, ask your agent:
 
-To use the skills in *any* Codex project, clone the repository as above, then
-copy its three skill folders into your personal skills directory:
-
-```bash
-mkdir -p ~/.agents/skills
-cp -R .agents/skills/* ~/.agents/skills/
+```text
+Install the three miccai2026 skills from https://github.com/maystroh/miccai2026_foragents/tree/main/.agents/skills for use in all my Codex projects.
 ```
-
-On Windows PowerShell, use this equivalent from the cloned repository root:
-
-```powershell
-New-Item -ItemType Directory -Force "$HOME/.agents/skills" | Out-Null
-Copy-Item -Recurse -Force .agents/skills/* "$HOME/.agents/skills/"
-```
-
-See the [skill guide](docs/RESEARCH_SKILLS.md) for the shared evidence rules and
-the [skill ideas](docs/RESEARCH_SKILL_IDEAS.md) for community contributions.
 
 ## Reviewer acceptance summary
 
