@@ -6,20 +6,57 @@ research artifacts across modalities and clinical applications.
 See [AGENTS.md](AGENTS.md) for repository conventions and
 [docs/PROJECT_MEMORY.md](docs/PROJECT_MEMORY.md) for the current analysis state.
 
-## PDF to Markdown with LlamaCloud (optional)
+## Research reasoning skills
 
-`src/llamacloud/` converts paper PDFs to Markdown with LlamaParse, keeping tables,
-LaTeX equations and headings that PyMuPDF's plain text loses.
-**Fill in the API key first:** copy `src/llamacloud/.env.example` to `.env` at the
-repository root and set `LLAMA_CLOUD_API_KEY` (optionally `LLAMA_CLOUD_API_KEY2`, `3`, ...
-for automatic rotation). Without a key, the parser exits immediately. Then run:
+Three Codex skills help turn a paper into a concise briefing, an evidence audit,
+and a decisive follow-up experiment:
+
+| Question | Skill |
+| --- | --- |
+| Understand this paper in one minute. | [`understand-paper-one-minute`](.agents/skills/understand-paper-one-minute/SKILL.md) |
+| What contribution is actually supported? | [`what-contribution-is-supported`](.agents/skills/what-contribution-is-supported/SKILL.md) |
+| What experiment would change the conclusion? | [`experiment-that-changes-conclusion`](.agents/skills/experiment-that-changes-conclusion/SKILL.md) |
+
+### Get started
+
+Clone the repository and open its root folder in Codex. The skills under
+`.agents/skills/` are available in that project without a separate install:
 
 ```bash
-python -m src.llamacloud.parse_pdfs path/to/pdfs --out output/llamacloud --tier cost_effective
+git clone https://github.com/maystroh/miccai2026_foragents.git
+cd miccai2026_foragents
 ```
 
-The `cost_effective` tier costs about 3 credits per page, roughly 30 per MICCAI paper.
-See [src/llamacloud/README.md](src/llamacloud/README.md) for tiers, outputs and credit tracking.
+In a Codex chat, ask for a skill by name and provide a paper or its stable ID:
+
+```text
+Use the understand-paper-one-minute skill on papers/<paper-id>.
+Use the what-contribution-is-supported skill on papers/<paper-id>.
+Use the experiment-that-changes-conclusion skill on papers/<paper-id>.
+```
+
+In Codex CLI or the IDE extension, `/skills` lists available skills and `$` can
+mention one directly, for example `$understand-paper-one-minute`. If a paper is
+not in the repository, provide a lawful copy or link. The skills state when
+their analysis is limited to an abstract or metadata.
+
+To use the skills in *any* Codex project, clone the repository as above, then
+copy its three skill folders into your personal skills directory:
+
+```bash
+mkdir -p ~/.agents/skills
+cp -R .agents/skills/* ~/.agents/skills/
+```
+
+On Windows PowerShell, use this equivalent from the cloned repository root:
+
+```powershell
+New-Item -ItemType Directory -Force "$HOME/.agents/skills" | Out-Null
+Copy-Item -Recurse -Force .agents/skills/* "$HOME/.agents/skills/"
+```
+
+See the [skill guide](docs/RESEARCH_SKILLS.md) for the shared evidence rules and
+the [skill ideas](docs/RESEARCH_SKILL_IDEAS.md) for community contributions.
 
 ## Reviewer acceptance summary
 
