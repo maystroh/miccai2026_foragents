@@ -19,26 +19,18 @@ and a decisive follow-up experiment:
 
 ### Get started
 
-Clone the repository and open its root folder in Codex. The skills under
-`.agents/skills/` are available in that project without a separate install:
+Ask your Codex agent to install the skills:
 
-```bash
-git clone https://github.com/maystroh/miccai2026_foragents.git
-cd miccai2026_foragents
+```text
+Install the three miccai2026 skills from https://github.com/maystroh/miccai2026_foragents/tree/main/.agents/skills for use in all my Codex projects.
 ```
 
-In a Codex chat, ask for a skill by name and provide a paper or its stable ID:
+Then ask for a skill by name and provide a paper URL or local path:
 
 ```text
 Use the miccai2026-understand-paper-one-minute skill on <paper URL or local path>.
 Use the miccai2026-what-contribution-is-supported skill on <paper URL or local path>.
 Use the miccai2026-experiment-that-changes-conclusion skill on <paper URL or local path>.
-```
-
-To install the skills for use in any Codex project, ask your agent:
-
-```text
-Install the three miccai2026 skills from https://github.com/maystroh/miccai2026_foragents/tree/main/.agents/skills for use in all my Codex projects.
 ```
 
 ## Reviewer acceptance summary
