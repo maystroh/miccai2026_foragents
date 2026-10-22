@@ -13,9 +13,9 @@ and a decisive follow-up experiment:
 
 | Question | Skill |
 | --- | --- |
-| Understand this paper in one minute. | [`understand-paper-one-minute`](.agents/skills/understand-paper-one-minute/SKILL.md) |
-| What contribution is actually supported? | [`what-contribution-is-supported`](.agents/skills/what-contribution-is-supported/SKILL.md) |
-| What experiment would change the conclusion? | [`experiment-that-changes-conclusion`](.agents/skills/experiment-that-changes-conclusion/SKILL.md) |
+| Understand this paper in one minute. | [`miccai2026-understand-paper-one-minute`](.agents/skills/miccai2026-understand-paper-one-minute/SKILL.md) |
+| What contribution is actually supported? | [`miccai2026-what-contribution-is-supported`](.agents/skills/miccai2026-what-contribution-is-supported/SKILL.md) |
+| What experiment would change the conclusion? | [`miccai2026-experiment-that-changes-conclusion`](.agents/skills/miccai2026-experiment-that-changes-conclusion/SKILL.md) |
 
 ### Get started
 
@@ -30,13 +30,13 @@ cd miccai2026_foragents
 In a Codex chat, ask for a skill by name and provide a paper or its stable ID:
 
 ```text
-Use the understand-paper-one-minute skill on <paper URL or local path>.
-Use the what-contribution-is-supported skill on <paper URL or local path>.
-Use the experiment-that-changes-conclusion skill on <paper URL or local path>.
+Use the miccai2026-understand-paper-one-minute skill on <paper URL or local path>.
+Use the miccai2026-what-contribution-is-supported skill on <paper URL or local path>.
+Use the miccai2026-experiment-that-changes-conclusion skill on <paper URL or local path>.
 ```
 
 In Codex CLI or the IDE extension, `/skills` lists available skills and `$` can
-mention one directly, for example `$understand-paper-one-minute`. If a paper is
+mention one directly, for example `$miccai2026-understand-paper-one-minute`. If a paper is
 not in the repository, provide a lawful copy or link. The skills state when
 their analysis is limited to an abstract or metadata.
 
