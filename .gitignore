@@ -30,3 +30,6 @@ bin-release/
 *.ipa
 *.apk
 .cache/
+
+# MICCAI brain database (rebuilt by `python -m src.miccai_brain build`)
+reports/miccai_brain/brain.sqlite

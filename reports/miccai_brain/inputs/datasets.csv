@@ -1,0 +1,68 @@
+dataset,pattern
+BraTS,\bBraTS\b
+ADNI,\bADNI\b
+OASIS,\bOASIS(?:-\d)?\b
+UK Biobank,\bUK\s?Biobank\b|\bUKB\b
+HCP,\bHuman Connectome Project\b|\bHCP\b
+ABIDE,\bABIDE\b
+fastMRI,\bfastMRI\b
+IXI,\bIXI\b
+ACDC,\bACDC\b
+M&Ms,\bM&Ms(?:-2)?\b
+ISLES,\bISLES\b
+ATLAS,\bATLAS (?:v?2|R2)\b
+MSSEG,\bMSSEG\b
+PPMI,\bPPMI\b
+AIBL,\bAIBL\b
+dHCP,\bdHCP\b
+ABCD,\bABCD\b
+LIDC-IDRI,\bLIDC(?:-IDRI)?\b
+MIMIC-CXR,\bMIMIC-CXR\b
+MIMIC-IV,\bMIMIC-(?:III|IV)\b
+CheXpert,\bCheXpert\b
+ChestX-ray14,\bChestX-?ray14\b|\bNIH ChestX\b
+NIH Pancreas-CT,\bNIH Pancreas\b
+KiTS,\bKiTS\d*\b
+LiTS,\bLiTS\b
+MSD,\bMedical Segmentation Decathlon\b|\bMSD\b
+BTCV,\bBTCV\b
+AMOS,\bAMOS\b
+TotalSegmentator,\bTotalSegmentator\b
+FLARE,\bFLARE\d*\b
+Synapse,\bSynapse\b
+CAMELYON,\bCAMELYON\s?1[67]\b|\bCamelyon\b
+TCGA,\bTCGA\b
+PANDA,\bPANDA\b
+BCSS,\bBCSS\b
+PathVQA,\bPathVQA\b
+VQA-RAD,\bVQA-RAD\b
+SLAKE,\bSLAKE\b
+ISIC,\bISIC\b
+HAM10000,\bHAM10000\b
+Kvasir,\bKvasir(?:-SEG)?\b
+CVC-ClinicDB,\bCVC-ClinicDB\b
+EndoVis,\bEndoVis\b
+Cholec80,\bCholec80\b
+CholecT50,\bCholecT\d+\b
+REFUGE,\bREFUGE\b
+DRIVE,\bDRIVE\b
+EyePACS,\bEyePACS\b
+CAMUS,\bCAMUS\b
+EchoNet-Dynamic,\bEchoNet(?:-Dynamic)?\b
+BUSI,\bBUSI\b
+DDSM,\bCBIS-DDSM\b|\bDDSM\b
+INbreast,\bINbreast\b
+VinDr,\bVinDr(?:-\w+)?\b
+RSNA,\bRSNA\b
+COVID-19 CT,\bCOVID-CT\b
+LUNA16,\bLUNA16\b
+PI-CAI,\bPI-CAI\b
+PROMISE12,\bPROMISE12\b
+HECKTOR,\bHECKTOR\b
+AutoPET,\bauto-?PET\b
+TCIA,\bTCIA\b
+MedMNIST,\bMedMNIST\b
+ROCO,\bROCO\b
+PMC-OA,\bPMC-OA\b
+MedPix,\bMedPix\b
+CT-RATE,\bCT-RATE\b

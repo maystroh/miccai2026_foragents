@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MICCAI 2026 Brain</title>
+<style>
+:root {
+  --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6b66; --line: #e3e2dd;
+  --accent: #2f6fdf; --concept: #8a8a84; --dataset: #d9822b; --edge: rgba(60,60,60,0.18);
+  --hl: #e0443e;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151514; --panel: #1e1e1c; --ink: #ecebe6; --muted: #9c9b95; --line: #33332f;
+    --accent: #6b9cf5; --concept: #9a9a93; --dataset: #f0a05a; --edge: rgba(220,220,220,0.14); --hl: #ff6b5e;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151514; --panel: #1e1e1c; --ink: #ecebe6; --muted: #9c9b95; --line: #33332f;
+  --accent: #6b9cf5; --concept: #9a9a93; --dataset: #f0a05a; --edge: rgba(220,220,220,0.14); --hl: #ff6b5e;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.app { display: grid; grid-template-columns: 280px 1fr 380px; height: 100vh; }
+aside, .detail { background: var(--panel); overflow-y: auto; padding: 16px; }
+aside { border-right: 1px solid var(--line); }
+.detail { border-left: 1px solid var(--line); }
+h1 { font-size: 17px; margin: 0 0 2px; }
+h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 6px; }
+h3 { font-size: 16px; margin: 0 0 6px; line-height: 1.3; }
+.sub { color: var(--muted); font-size: 12px; }
+label { display: block; margin: 6px 0; font-size: 13px; }
+select, input[type=search] { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); color: var(--ink); font: inherit; }
+input[type=range] { width: 100%; }
+.row { display: flex; align-items: center; gap: 8px; }
+.list { list-style: none; margin: 0; padding: 0; }
+.list li { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; cursor: pointer; border-bottom: 1px dashed var(--line); }
+.list li:hover { color: var(--accent); }
+.list .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+#graphwrap { position: relative; overflow: hidden; min-height: 0; }
+#graph { position: absolute; inset: 0; }
+.legend { position: absolute; left: 12px; bottom: 12px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 10px; font-size: 12px; max-width: 60%; }
+.legend span { display: inline-flex; align-items: center; gap: 5px; margin-right: 10px; white-space: nowrap; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.chip { display: inline-block; padding: 2px 8px; margin: 2px 4px 2px 0; border-radius: 999px; border: 1px solid var(--line);
+  font-size: 12px; cursor: pointer; }
+.chip.ds { border-color: var(--dataset); }
+.chip:hover { border-color: var(--accent); }
+a { color: var(--accent); }
+.meta { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+.abstract { font-size: 13px; }
+.empty { color: var(--muted); }
+.count { position: absolute; right: 12px; top: 10px; font-size: 12px; color: var(--muted); }
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: auto 60vh auto; height: auto; }
+  aside, .detail { border: 0; padding: 16px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1>MICCAI 2026 Brain</h1>
+    <div class="sub" id="stats"></div>
+    <h2>Topic</h2>
+    <select id="topic"></select>
+    <h2>Find</h2>
+    <input type="search" id="q" placeholder="Title, abstract, concept, dataset…">
+    <div class="sub" id="qcount"></div>
+    <h2>Show</h2>
+    <label class="row"><input type="checkbox" id="showConcepts" checked> Concepts (keywords, tasks, methods)</label>
+    <label class="row"><input type="checkbox" id="showTags"> MICCAI tags (body, application, ML)</label>
+    <label class="row"><input type="checkbox" id="showDatasets" checked> Datasets</label>
+    <label class="row"><input type="checkbox" id="showSim" checked> Similar-paper links</label>
+    <label>Concepts used by at least <b id="minCv"></b> papers<input type="range" id="minC" min="2" max="20" value="3"></label>
+    <label>Similarity above <b id="minSv"></b><input type="range" id="minS" min="0" max="95" value="60"></label>
+    <h2>Top concepts here</h2>
+    <ul class="list" id="topConcepts"></ul>
+    <h2>Top datasets here</h2>
+    <ul class="list" id="topDatasets"></ul>
+  </aside>
+  <main id="graphwrap"><div id="graph"></div><div class="count" id="nodecount"></div><div class="legend" id="legend"></div></main>
+  <section class="detail" id="detail"><p class="empty">Click a paper, concept or dataset to see its details and neighbours.</p></section>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/force-graph@1.51.4/dist/force-graph.min.js"></script>
+<script>
+const DATA = /*__BRAIN_DATA__*/null;
+const $ = (id) => document.getElementById(id);
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+
+const TAG_KINDS = new Set(["body", "application", "ml"]);
+const P = DATA.papers, C = DATA.concepts, D = DATA.datasets;
+const topics = DATA.topics.map((t) => t.modality);
+const hue = (i) => `hsl(${Math.round((i * 360) / Math.max(topics.length, 1) + 20) % 360} 62% 52%)`;
+const topicColor = Object.fromEntries(topics.map((t, i) => [t, hue(i)]));
+const neighbours = new Map();
+DATA.edges.forEach(([a, b, w]) => {
+  if (!neighbours.has(a)) neighbours.set(a, []);
+  if (!neighbours.has(b)) neighbours.set(b, []);
+  neighbours.get(a).push([b, w]); neighbours.get(b).push([a, w]);
+});
+const conceptPapers = C.map(() => []), datasetPapers = D.map(() => []);
+P.forEach((p, i) => { p.k.forEach((c) => conceptPapers[c].push(i)); p.s.forEach((d) => datasetPapers[d].push(i)); });
+
+const s = DATA.stats || {};
+$("stats").textContent = `${P.length} papers · ${C.length} concepts · ${D.length} datasets` + (s.embedder ? ` · ${s.embedder}` : "");
+$("topic").innerHTML = `<option value="">All topics (${P.length})</option>` +
+  DATA.topics.map((t) => `<option value="${esc(t.modality)}">${esc(t.modality)} (${t.papers})</option>`).join("");
+try { const saved = localStorage.getItem("brain.topic"); if (saved !== null) $("topic").value = saved; } catch (e) {}
+
+let selected = null, matches = null;
+const Graph = ForceGraph()($("graph"))
+  .nodeId("id").nodeLabel((n) => esc(n.label))
+  .linkColor((l) => l.kind === "sim" ? css("--edge") : "rgba(140,140,140,0.10)")
+  .linkWidth((l) => l.kind === "sim" ? Math.max(0.3, (l.w - 0.5) * 4) : 0.4)
+  .nodeCanvasObject(drawNode).nodePointerAreaPaint((n, color, ctx) => {
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 2, 0, 2 * Math.PI); ctx.fill();
+  })
+  .onNodeClick((n) => select(n)).onBackgroundClick(() => { selected = null; Graph.nodeCanvasObject(drawNode); })
+  .cooldownTicks(200).d3VelocityDecay(0.3);
+Graph.d3Force("charge").strength(-28);
+Graph.d3Force("link").distance((l) => l.kind === "sim" ? 30 : 45);
+
+function drawNode(n, ctx, scale) {
+  const dim = (matches && !matches.has(n.id)) || (selected && !selected.near.has(n.id));
+  ctx.globalAlpha = dim ? 0.15 : 1;
+  ctx.beginPath();
+  if (n.type === "dataset") ctx.rect(n.x - n.r, n.y - n.r, n.r * 2, n.r * 2);
+  else ctx.arc(n.x, n.y, n.r, 0, 2 * Math.PI);
+  ctx.fillStyle = n.type === "paper" ? n.color : n.type === "dataset" ? css("--dataset") : css("--concept");
+  ctx.fill();
+  if (selected && selected.node === n) { ctx.lineWidth = 2 / scale; ctx.strokeStyle = css("--hl"); ctx.stroke(); }
+  if (n.type !== "paper" && (scale > 1.2 || n.r > 7) && !dim) {
+    ctx.font = `${11 / scale}px system-ui`; ctx.fillStyle = css("--ink"); ctx.textAlign = "center";
+    ctx.fillText(n.label, n.x, n.y + n.r + 10 / scale);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function build() {
+  const topic = $("topic").value;
+  try { localStorage.setItem("brain.topic", topic); } catch (e) {}
+  const minC = +$("minC").value, minS = +$("minS").value / 100;
+  $("minCv").textContent = minC; $("minSv").textContent = minS.toFixed(2);
+  const keep = new Set(); P.forEach((p, i) => { if (!topic || p.m.includes(topic)) keep.add(i); });
+  const nodes = [], links = [], cCount = new Map(), dCount = new Map();
+  keep.forEach((i) => {
+    const p = P[i];
+    nodes.push({id: "p" + i, i, type: "paper", label: p.t, r: 3.5, color: topic ? css("--accent") : (topicColor[p.m[0]] || css("--accent"))});
+    p.k.forEach((c) => cCount.set(c, (cCount.get(c) || 0) + 1));
+    p.s.forEach((d) => dCount.set(d, (dCount.get(d) || 0) + 1));
+  });
+  const showC = $("showConcepts").checked, showT = $("showTags").checked, showD = $("showDatasets").checked;
+  cCount.forEach((n, c) => {
+    const isTag = TAG_KINDS.has(C[c].k);
+    if (n < minC || (isTag ? !showT : !showC)) return;
+    nodes.push({id: "c" + c, i: c, type: "concept", label: C[c].n, r: 2 + Math.sqrt(n) * 1.3});
+    keep.forEach((i) => { if (P[i].k.includes(c)) links.push({source: "p" + i, target: "c" + c, kind: "concept"}); });
+  });
+  if (showD) dCount.forEach((n, d) => {
+    if (n < Math.min(minC, 2)) return;
+    nodes.push({id: "d" + d, i: d, type: "dataset", label: D[d].n, r: 2 + Math.sqrt(n) * 1.3});
+    keep.forEach((i) => { if (P[i].s.includes(d)) links.push({source: "p" + i, target: "d" + d, kind: "dataset"}); });
+  });
+  if ($("showSim").checked) DATA.edges.forEach(([a, b, w]) => {
+    if (w >= minS && keep.has(a) && keep.has(b)) links.push({source: "p" + a, target: "p" + b, kind: "sim", w});
+  });
+  Graph.graphData({nodes, links});
+  $("nodecount").textContent = `${keep.size} papers · ${nodes.length - keep.size} concept/dataset nodes · ${links.length} links`;
+  topList("topConcepts", [...cCount].filter(([c]) => !TAG_KINDS.has(C[c].k)), C, "c");
+  topList("topDatasets", [...dCount], D, "d");
+  $("legend").innerHTML = topic
+    ? `<span><i class="dot" style="background:${css("--accent")}"></i>Paper</span><span><i class="dot" style="background:${css("--concept")}"></i>Concept</span><span><i class="dot" style="border-radius:0;background:${css("--dataset")}"></i>Dataset</span>`
+    : topics.map((t) => `<span><i class="dot" style="background:${topicColor[t]}"></i>${esc(t)}</span>`).join("");
+  applyQuery();
+}
+
+function topList(id, entries, src, prefix) {
+  entries.sort((a, b) => b[1] - a[1]);
+  $(id).innerHTML = entries.slice(0, 12).map(([i, n]) =>
+    `<li data-id="${prefix}${i}"><span>${esc(src[i].n)}</span><span class="n">${n}</span></li>`).join("") || `<li class="empty">None</li>`;
+  $(id).querySelectorAll("li[data-id]").forEach((li) => li.onclick = () => selectById(li.dataset.id));
+}
+
+function applyQuery() {
+  const q = $("q").value.trim().toLowerCase();
+  if (!q) { matches = null; $("qcount").textContent = ""; Graph.nodeCanvasObject(drawNode); return; }
+  matches = new Set();
+  Graph.graphData().nodes.forEach((n) => {
+    let hay = n.label.toLowerCase();
+    if (n.type === "paper") { const p = P[n.i]; hay += " " + p.a.toLowerCase() + " " + p.k.map((c) => C[c].n).join(" ") + " " + p.s.map((d) => D[d].n.toLowerCase()).join(" "); }
+    if (hay.includes(q)) matches.add(n.id);
+  });
+  $("qcount").textContent = `${matches.size} matching nodes`;
+  Graph.nodeCanvasObject(drawNode);
+}
+
+function selectById(id) {
+  const n = Graph.graphData().nodes.find((x) => x.id === id);
+  if (n) select(n); else showDetail(id);
+}
+
+function select(n) {
+  const near = new Set([n.id]);
+  Graph.graphData().links.forEach((l) => {
+    if (l.source.id === n.id) near.add(l.target.id);
+    if (l.target.id === n.id) near.add(l.source.id);
+  });
+  selected = {node: n, near};
+  Graph.nodeCanvasObject(drawNode);
+  if (n.x !== undefined) { Graph.centerAt(n.x, n.y, 600); }
+  showDetail(n.id);
+}
+
+function paperLink(i) { return `<li data-id="p${i}"><span>${esc(P[i].t)}</span></li>`; }
+
+function showDetail(id) {
+  const type = id[0], i = +id.slice(1), el = $("detail");
+  if (type === "p") {
+    const p = P[i];
+    const sims = (neighbours.get(i) || []).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    el.innerHTML = `<h3>${esc(p.t)}</h3>
+      <div class="meta">${esc(p.au)}<br>${p.m.map(esc).join(" · ")}${p.d ? " · " + esc(p.d) : ""}${p.r ? ` · ${p.r} review texts` : ""}</div>
+      <div class="meta"><a href="${esc(p.u)}" target="_blank" rel="noopener">Paper page</a>${p.g ? ` · <a href="${esc(p.g)}" target="_blank" rel="noopener">Code</a>` : ""} · <code>${esc(p.id)}</code></div>
+      <div class="abstract">${esc(p.a)}</div>
+      <h2>Concepts</h2>${p.k.map((c) => `<span class="chip" data-id="c${c}">${esc(C[c].n)}</span>`).join("") || '<span class="empty">None</span>'}
+      <h2>Datasets</h2>${p.s.map((d) => `<span class="chip ds" data-id="d${d}">${esc(D[d].n)}</span>`).join("") || '<span class="empty">None detected</span>'}
+      <h2>Most similar papers</h2><ul class="list">${sims.map(([j, w]) => `<li data-id="p${j}"><span>${esc(P[j].t)}</span><span class="n">${w.toFixed(2)}</span></li>`).join("")}</ul>`;
+  } else {
+    const isC = type === "c", item = isC ? C[i] : D[i], list = (isC ? conceptPapers : datasetPapers)[i];
+    const topic = $("topic").value, inTopic = list.filter((j) => !topic || P[j].m.includes(topic));
+    el.innerHTML = `<h3>${esc(item.n)}</h3><div class="meta">${isC ? (TAG_KINDS.has(item.k) ? "MICCAI tag: " + esc(item.k) : item.k === "keyword" ? "Author keyword" : "Extracted " + esc(item.k)) : "Dataset"} · ${list.length} papers overall${topic ? `, ${inTopic.length} in ${esc(topic)}` : ""}</div>
+      <ul class="list">${inTopic.map(paperLink).join("")}</ul>`;
+  }
+  el.querySelectorAll("[data-id]").forEach((x) => x.onclick = () => selectById(x.dataset.id));
+}
+
+["topic", "showConcepts", "showTags", "showDatasets", "showSim"].forEach((id) => $(id).onchange = build);
+["minC", "minS"].forEach((id) => $(id).oninput = () => { clearTimeout(window._t); window._t = setTimeout(build, 200); });
+$("q").oninput = () => { clearTimeout(window._q); window._q = setTimeout(applyQuery, 150); };
+new ResizeObserver(() => Graph.width($("graphwrap").clientWidth).height($("graphwrap").clientHeight)).observe($("graphwrap"));
+build();
+</script>
+</body>
+</html>
