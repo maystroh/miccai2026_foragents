@@ -59,7 +59,7 @@ def make_corpus(root: Path):
 class MiccaiBrainTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.tmp = tempfile.TemporaryDirectory()
+        cls.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         cls.root = Path(cls.tmp.name)
         make_corpus(cls.root)
         llm = cls.root / "reports" / "miccai_brain" / "llm"
@@ -138,7 +138,7 @@ for line in sys.stdin:
 class SshEmbedderTest(unittest.TestCase):
     def test_speaks_server_embed_protocol(self):
         from src.miccai_brain.embed import get_embedder
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             script = Path(tmp) / "server.py"
             script.write_text(FAKE_SERVER, encoding="utf-8")
             env = {"MICCAI_BRAIN_SSH": "{remote}", "MICCAI_BRAIN_SSH_REMOTE": f'"{sys.executable}" "{script}"'}
@@ -175,7 +175,7 @@ class FailingEmbedder:
 
 class RobustnessTest(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.root = Path(self.tmp.name)
         make_corpus(self.root)
         self.db = self.root / "brain.sqlite"

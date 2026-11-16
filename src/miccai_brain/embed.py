@@ -131,10 +131,10 @@ class SshEmbedder(Embedder):
     MICCAI_BRAIN_SSH is the command that opens the connection. A {remote} placeholder marks where
     the remote command goes (otherwise it is appended in single quotes), for example
       wsl.exe -e bash -lc "ssh -o BatchMode=yes -p 2361 user@host '{remote}'"
-    MICCAI_BRAIN_SSH_REMOTE is the remote command (DEEP_MODEL is set from the spec).
+    MICCAI_BRAIN_SSH_REMOTE is the remote command; {model} in it is replaced by the spec's model.
     """
 
-    DEFAULT_REMOTE = "~/projects/embed-eval/venv/bin/python ~/projects/embed-eval/server_embed.py"
+    DEFAULT_REMOTE = "DEEP_MODEL={model} ~/projects/embed-eval/venv/bin/python ~/projects/embed-eval/server_embed.py"
 
     def __init__(self, model: str):
         self.model = model
@@ -143,7 +143,7 @@ class SshEmbedder(Embedder):
         if not ssh:
             raise RuntimeError("Set MICCAI_BRAIN_SSH to the ssh command for the GPU server")
         remote = os.environ.get("MICCAI_BRAIN_SSH_REMOTE", self.DEFAULT_REMOTE)
-        remote = f"DEEP_MODEL={model} {remote}"
+        remote = remote.replace("{model}", model)
         command = ssh.replace("{remote}", remote) if "{remote}" in ssh else f"{ssh} '{remote}'"
         self.batch = int(os.environ.get("MICCAI_BRAIN_EMBED_BATCH", "64"))
         self.proc = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
