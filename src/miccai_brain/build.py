@@ -34,10 +34,12 @@ def build(root: Path, db_path: Path, embedder_spec: str | None = None, modalitie
     # Build into a fresh file; the live index is replaced only once everything succeeded.
     tmp_path = db_path.with_name(db_path.name + ".building")
     tmp_path.unlink(missing_ok=True)
+    conn = store.connect(tmp_path)
     try:
-        stats = _build_into(store.connect(tmp_path), cache, root, papers, aliases, patterns, embedder,
+        stats = _build_into(conn, cache, root, papers, aliases, patterns, embedder,
                             with_reviews, neighbors, min_similarity, t0, log)
     except BaseException:
+        conn.close()  # Windows cannot delete a file that is still open
         tmp_path.unlink(missing_ok=True)
         raise
     finally:
