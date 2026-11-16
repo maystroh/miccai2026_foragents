@@ -14,7 +14,7 @@ import re
 import time
 import urllib.error
 import urllib.request
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from pathlib import Path
 
 from .chunking import clean_markdown
@@ -128,23 +128,41 @@ def extract_all(root: Path, papers: list[Paper], model: str, workers: int = 4, f
         path.write_text(json.dumps(record, indent=1, ensure_ascii=False), encoding="utf-8")
         return paper, used, None
 
+    def record(paper, used, error):
+        if error:
+            usage["failed"] += 1
+            log(f"  ! {paper.paper_id}: {error}")
+            return
+        usage["papers"] += 1
+        for key in ("prompt_tokens", "completion_tokens"):
+            usage[key] += int(used.get(key, 0) or 0)
+        usage["cost"] += float(used.get("cost", 0) or 0)
+        if usage["papers"] % 20 == 0:
+            log(f"  {usage['papers']}/{len(todo)}  tokens in {usage['prompt_tokens']:,} out "
+                f"{usage['completion_tokens']:,}  cost ${usage['cost']:.4f}")
+
+    # At most `workers` requests are in flight; nothing new starts once the budget is reached,
+    # so the overshoot is bounded by the requests already running.
+    pending = set()
+    queue = iter(todo)
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        for start in range(0, len(todo), workers * 5):
-            if max_cost is not None and usage["cost"] >= max_cost:
-                usage["stopped_by_budget"] = True
-                log(f"  budget of ${max_cost:.2f} reached; stopping. Re-run to continue from the cache.")
+        while True:
+            over = max_cost is not None and usage["cost"] >= max_cost
+            while not over and len(pending) < workers:
+                paper = next(queue, None)
+                if paper is None:
+                    break
+                pending.add(pool.submit(work, paper))
+            if not pending:
                 break
-            for paper, used, error in pool.map(work, todo[start : start + workers * 5]):
-                if error:
-                    usage["failed"] += 1
-                    log(f"  ! {paper.paper_id}: {error}")
-                    continue
-                usage["papers"] += 1
-                for key in ("prompt_tokens", "completion_tokens"):
-                    usage[key] += int(used.get(key, 0) or 0)
-                usage["cost"] += float(used.get("cost", 0) or 0)
-            log(f"  {usage['papers']}/{len(todo)}  tokens in {usage['prompt_tokens']:,} out {usage['completion_tokens']:,}"
-                f"  cost ${usage['cost']:.4f}")
+            done, pending = wait(pending, return_when=FIRST_COMPLETED)
+            for future in done:
+                record(*future.result())
+            if max_cost is not None and usage["cost"] >= max_cost and not usage["stopped_by_budget"]:
+                usage["stopped_by_budget"] = True
+                log(f"  budget of ${max_cost:.2f} reached; finishing {len(pending)} running request(s) and stopping."
+                    " Re-run to continue from the cache.")
+    log(f"  done: {usage['papers']} papers, cost ${usage['cost']:.4f}")
     if usage["papers"]:
         usage["cost_per_paper"] = round(usage["cost"] / usage["papers"], 5)
     usage["cost"] = round(usage["cost"], 4)

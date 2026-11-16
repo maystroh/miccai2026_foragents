@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import time
 from pathlib import Path
 
@@ -28,12 +29,28 @@ def build(root: Path, db_path: Path, embedder_spec: str | None = None, modalitie
     log(f"loaded {len(papers)} papers")
     aliases, patterns = load_aliases(root), load_dataset_patterns(root)
     embedder = get_embedder(embedder_spec)
-    conn = store.connect(db_path)
-    previous = store.get_meta(conn, "embedder")
-    if previous and previous != embedder.spec:
-        log(f"embedder changed ({previous} -> {embedder.spec}); vectors will be recomputed")
-    for table in ("papers", "paper_modalities", "chunks", "chunks_fts", "paper_concepts", "paper_datasets", "paper_edges"):
-        conn.execute(f"DELETE FROM {table}")
+    db_path = Path(db_path)
+    cache = store.connect_cache(db_path)
+    # Build into a fresh file; the live index is replaced only once everything succeeded.
+    tmp_path = db_path.with_name(db_path.name + ".building")
+    tmp_path.unlink(missing_ok=True)
+    try:
+        stats = _build_into(store.connect(tmp_path), cache, root, papers, aliases, patterns, embedder,
+                            with_reviews, neighbors, min_similarity, t0, log)
+    except BaseException:
+        tmp_path.unlink(missing_ok=True)
+        raise
+    finally:
+        cache.close()
+        if hasattr(embedder, "close"):
+            embedder.close()
+    os.replace(tmp_path, db_path)
+    log(json.dumps(stats))
+    return stats
+
+
+def _build_into(conn, cache, root, papers, aliases, patterns, embedder, with_reviews, neighbors,
+                min_similarity, t0, log) -> dict:
 
     rows = []  # (paper_id, kind, section, text, title)
     llm_papers = 0
@@ -79,17 +96,18 @@ def build(root: Path, db_path: Path, embedder_spec: str | None = None, modalitie
     for start in range(0, len(hashes), 900):
         part = hashes[start : start + 900]
         q = f"SELECT hash, vector FROM embed_cache WHERE hash IN ({','.join('?' * len(part))})"
-        cached.update({h: v for h, v in conn.execute(q, part)})
+        cached.update({h: v for h, v in cache.execute(q, part)})
     todo = [i for i, h in enumerate(hashes) if h not in cached]
     log(f"embedding {len(todo)} new chunks ({len(rows) - len(todo)} cached) with {embedder.spec}")
-    for start in range(0, len(todo), 256):
-        idx = todo[start : start + 256]
+    batch = int(os.environ.get("MICCAI_BRAIN_BUILD_BATCH", "256"))
+    for start in range(0, len(todo), batch):
+        idx = todo[start : start + batch]
         vecs = embedder.embed([rows[i][3] for i in idx])
         for i, vec in zip(idx, vecs):
             cached[hashes[i]] = store.to_blob(vec)
-            conn.execute("INSERT OR REPLACE INTO embed_cache VALUES (?, ?)", (hashes[i], cached[hashes[i]]))
-        conn.commit()
-        log(f"  {min(start + 256, len(todo))}/{len(todo)}")
+            cache.execute("INSERT OR REPLACE INTO embed_cache VALUES (?, ?)", (hashes[i], cached[hashes[i]]))
+        cache.commit()  # progress survives a failed build
+        log(f"  {min(start + batch, len(todo))}/{len(todo)}")
 
     for (pid, kind, section, text, title), h in zip(rows, hashes):
         cur = conn.execute("INSERT INTO chunks (paper_id, kind, section, text, hash, vector) VALUES (?,?,?,?,?,?)",
@@ -123,8 +141,6 @@ def build(root: Path, db_path: Path, embedder_spec: str | None = None, modalitie
                     a, b = sorted((pid, ids[j]))
                     conn.execute("INSERT OR REPLACE INTO paper_edges VALUES (?, ?, ?)", (a, b, float(sims[i, j])))
 
-    if hasattr(embedder, "close"):
-        embedder.close()
     stats = {
         "papers": len(papers),
         "chunks": len(rows),
@@ -138,5 +154,5 @@ def build(root: Path, db_path: Path, embedder_spec: str | None = None, modalitie
     store.set_meta(conn, "embedder", embedder.spec)
     store.set_meta(conn, "stats", stats)
     conn.commit()
-    log(json.dumps(stats))
+    conn.close()
     return stats

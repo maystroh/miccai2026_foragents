@@ -59,16 +59,20 @@ class Brain:
         rows = self.conn.execute("SELECT paper_id FROM paper_modalities WHERE lower(modality) = lower(?)", (modality,))
         return {r[0] for r in rows}
 
-    def _bm25(self, query: str, kinds, allowed, limit=400) -> list[tuple[int, str]]:
+    def _bm25(self, query: str, kinds, modality: str | None, limit=400) -> list[tuple[int, str]]:
         tokens = [t for t in re.findall(r"[A-Za-z0-9][A-Za-z0-9\-]*", query) if t.lower() not in STOPWORDS]
         if not tokens:
             return []
         match = " OR ".join('"' + t.replace('"', "") + '"' for t in tokens)
-        rows = self.conn.execute(
-            "SELECT c.id, c.paper_id, c.kind FROM chunks_fts f JOIN chunks c ON c.id = f.rowid "
-            "WHERE chunks_fts MATCH ? ORDER BY bm25(chunks_fts, 4.0, 2.0, 1.0) LIMIT ?", (match, limit)).fetchall()
-        return [(r["id"], r["paper_id"]) for r in rows
-                if r["kind"] in kinds and (allowed is None or r["paper_id"] in allowed)]
+        kinds = sorted(kinds)
+        sql = ("SELECT c.id, c.paper_id FROM chunks_fts f JOIN chunks c ON c.id = f.rowid "
+               f"WHERE chunks_fts MATCH ? AND c.kind IN ({','.join('?' * len(kinds))})")
+        params: list = [match, *kinds]
+        if modality:  # filter before the LIMIT so other topics cannot crowd out matches
+            sql += " AND c.paper_id IN (SELECT paper_id FROM paper_modalities WHERE lower(modality) = lower(?))"
+            params.append(modality)
+        sql += " ORDER BY bm25(chunks_fts, 4.0, 2.0, 1.0) LIMIT ?"
+        return [(r["id"], r["paper_id"]) for r in self.conn.execute(sql, (*params, limit))]
 
     def _vector(self, query: str, kinds, allowed, limit=400) -> list[tuple[int, str]]:
         matrix = self._load_vectors()
@@ -90,7 +94,7 @@ class Brain:
         allowed = self._allowed(modality)
         lists = {}
         if mode in ("hybrid", "keyword"):
-            lists["bm25"] = self._bm25(query, kinds, allowed)
+            lists["bm25"] = self._bm25(query, kinds, modality)
         if mode in ("hybrid", "vector"):
             lists["vector"] = self._vector(query, kinds, allowed)
         scores: dict[str, float] = {}

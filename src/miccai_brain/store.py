@@ -22,7 +22,6 @@ CREATE TABLE IF NOT EXISTS chunks (
 );
 CREATE INDEX IF NOT EXISTS chunks_paper ON chunks(paper_id);
 CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(title, section, text, tokenize='porter unicode61');
-CREATE TABLE IF NOT EXISTS embed_cache (hash TEXT PRIMARY KEY, vector BLOB);
 CREATE TABLE IF NOT EXISTS paper_concepts (paper_id TEXT, concept TEXT, kind TEXT, PRIMARY KEY (paper_id, concept));
 CREATE TABLE IF NOT EXISTS paper_datasets (paper_id TEXT, dataset TEXT, mentions INTEGER, PRIMARY KEY (paper_id, dataset));
 CREATE TABLE IF NOT EXISTS paper_edges (src TEXT, dst TEXT, weight REAL, PRIMARY KEY (src, dst));
@@ -35,6 +34,30 @@ def connect(db_path: Path | str = DEFAULT_DB) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
+    return conn
+
+
+def cache_path(db_path: Path | str) -> Path:
+    db_path = Path(db_path)
+    return db_path.with_name(db_path.stem + ".embcache.sqlite")
+
+
+def connect_cache(db_path: Path | str) -> sqlite3.Connection:
+    """Embedding cache, kept in its own file so a failed build never touches the live index."""
+    path = cache_path(db_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(path)
+    conn.execute("CREATE TABLE IF NOT EXISTS embed_cache (hash TEXT PRIMARY KEY, vector BLOB)")
+    old = Path(db_path)
+    if old.exists():  # migrate a cache stored inside an older brain.sqlite
+        src = sqlite3.connect(old)
+        try:
+            if src.execute("SELECT 1 FROM sqlite_master WHERE name = 'embed_cache'").fetchone():
+                conn.executemany("INSERT OR IGNORE INTO embed_cache VALUES (?, ?)",
+                                 src.execute("SELECT hash, vector FROM embed_cache"))
+                conn.commit()
+        finally:
+            src.close()
     return conn
 
 

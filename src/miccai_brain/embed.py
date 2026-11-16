@@ -19,7 +19,7 @@ import urllib.request
 
 import numpy as np
 
-DEFAULT_SPEC = "sentence-transformers:BAAI/bge-small-en-v1.5"
+DEFAULT_SPEC = "sentence-transformers:Qwen/Qwen3-Embedding-0.6B"
 QWEN3_QUERY_PREFIX = (
     "Instruct: Given a search query about medical image computing, retrieve relevant MICCAI paper passages\nQuery: "
 )
