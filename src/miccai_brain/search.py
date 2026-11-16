@@ -146,7 +146,9 @@ class Brain:
             p = store.paper_row(self.conn, r["other"])
             shared = [x[0] for x in self.conn.execute(
                 "SELECT a.concept FROM paper_concepts a JOIN paper_concepts b ON a.concept = b.concept "
-                "WHERE a.paper_id = ? AND b.paper_id = ?", (paper_id, r["other"]))]
+                "WHERE a.paper_id = ? AND b.paper_id = ? ORDER BY CASE a.kind WHEN 'task' THEN 0 "
+                "WHEN 'method' THEN 1 WHEN 'keyword' THEN 2 WHEN 'anatomy' THEN 3 ELSE 4 END",
+                (paper_id, r["other"]))]
             out.append({"paper_id": r["other"], "title": p["title"], "similarity": round(r["weight"], 3),
                         "shared_concepts": shared, "modalities": p["modalities"]})
             if len(out) >= limit:
@@ -163,10 +165,10 @@ class Brain:
             return {"modality": modality, "papers": 0}
         marks = ",".join("?" * len(allowed))
         concepts = self.conn.execute(
-            f"SELECT concept, COUNT(*) n FROM paper_concepts WHERE paper_id IN ({marks}) AND kind NOT IN ('body','application','ml') "
+            f"SELECT concept, COUNT(*) n FROM paper_concepts WHERE paper_id IN ({marks}) AND kind NOT IN ('body','application','ml','metric') "
             f"GROUP BY concept ORDER BY n DESC LIMIT ?", (*allowed, top)).fetchall()
         tags = self.conn.execute(
-            f"SELECT concept, kind, COUNT(*) n FROM paper_concepts WHERE paper_id IN ({marks}) AND kind IN ('body','application','ml') "
+            f"SELECT concept, kind, COUNT(*) n FROM paper_concepts WHERE paper_id IN ({marks}) AND kind IN ('body','application','ml','metric') "
             f"GROUP BY concept, kind ORDER BY n DESC LIMIT ?", (*allowed, top)).fetchall()
         datasets = self.conn.execute(
             f"SELECT dataset, COUNT(*) n FROM paper_datasets WHERE paper_id IN ({marks}) "

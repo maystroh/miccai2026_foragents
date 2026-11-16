@@ -73,7 +73,7 @@ a { color: var(--accent); }
     <div class="sub" id="qcount"></div>
     <h2>Show</h2>
     <label class="row"><input type="checkbox" id="showConcepts" checked> Concepts (keywords, tasks, methods)</label>
-    <label class="row"><input type="checkbox" id="showTags"> MICCAI tags (body, application, ML)</label>
+    <label class="row"><input type="checkbox" id="showTags"> MICCAI tags and metrics</label>
     <label class="row"><input type="checkbox" id="showDatasets" checked> Datasets</label>
     <label class="row"><input type="checkbox" id="showSim" checked> Similar-paper links</label>
     <label>Concepts used by at least <b id="minCv"></b> papers<input type="range" id="minC" min="2" max="20" value="3"></label>
@@ -93,7 +93,7 @@ const $ = (id) => document.getElementById(id);
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 
-const TAG_KINDS = new Set(["body", "application", "ml"]);
+const TAG_KINDS = new Set(["body", "application", "ml", "metric"]);
 const P = DATA.papers, C = DATA.concepts, D = DATA.datasets;
 const topics = DATA.topics.map((t) => t.modality);
 const hue = (i) => `hsl(${Math.round((i * 360) / Math.max(topics.length, 1) + 20) % 360} 62% 52%)`;
@@ -234,7 +234,7 @@ function showDetail(id) {
   } else {
     const isC = type === "c", item = isC ? C[i] : D[i], list = (isC ? conceptPapers : datasetPapers)[i];
     const topic = $("topic").value, inTopic = list.filter((j) => !topic || P[j].m.includes(topic));
-    el.innerHTML = `<h3>${esc(item.n)}</h3><div class="meta">${isC ? (TAG_KINDS.has(item.k) ? "MICCAI tag: " + esc(item.k) : item.k === "keyword" ? "Author keyword" : "Extracted " + esc(item.k)) : "Dataset"} · ${list.length} papers overall${topic ? `, ${inTopic.length} in ${esc(topic)}` : ""}</div>
+    el.innerHTML = `<h3>${esc(item.n)}</h3><div class="meta">${isC ? (TAG_KINDS.has(item.k) ? (item.k === "metric" ? "Evaluation metric" : "MICCAI tag: " + esc(item.k)) : item.k === "keyword" ? "Author keyword" : "Extracted " + esc(item.k)) : "Dataset"} · ${list.length} papers overall${topic ? `, ${inTopic.length} in ${esc(topic)}` : ""}</div>
       <ul class="list">${inTopic.map(paperLink).join("")}</ul>`;
   }
   el.querySelectorAll("[data-id]").forEach((x) => x.onclick = () => selectById(x.dataset.id));
