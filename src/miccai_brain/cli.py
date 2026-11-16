@@ -6,7 +6,7 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
-from . import store
+from . import load_dotenv, store
 
 DEFAULT_HTML = Path("reports/miccai_brain/brain.html")
 
@@ -55,6 +55,8 @@ def main(argv=None) -> int:
     x.add_argument("--force", action="store_true")
 
     args = parser.parse_args(argv)
+    load_dotenv(Path(getattr(args, "root", ".")) / ".env")
+    load_dotenv(".env")
     if args.cmd == "build":
         from .build import build
         from .graph import write_dashboard
