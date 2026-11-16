@@ -4,14 +4,17 @@ Spec format: "<provider>:<model>", for example
   sentence-transformers:BAAI/bge-small-en-v1.5
   ollama:nomic-embed-text
   openai:text-embedding-3-small
+  ssh:Qwen/Qwen3-Embedding-0.6B   (GPU server running server_embed.py over SSH)
   hash:256          (deterministic, dependency-free; tests only)
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import os
 import re
+import subprocess
 import urllib.request
 
 import numpy as np
@@ -67,9 +70,12 @@ class SentenceTransformerEmbedder(Embedder):
         self.query_prefix = query_prefix_for(model)
 
     def embed(self, texts, query=False):
-        if query and self.query_prefix:
+        kwargs = {}
+        if query and "query" in (getattr(self.model, "prompts", None) or {}):
+            kwargs["prompt_name"] = "query"  # same prompt server_embed.py uses
+        elif query and self.query_prefix:
             texts = [self.query_prefix + t for t in texts]
-        return _normalize(self.model.encode(texts, batch_size=32, show_progress_bar=len(texts) > 64))
+        return _normalize(self.model.encode(texts, batch_size=32, show_progress_bar=len(texts) > 64, **kwargs))
 
 
 class HttpEmbedder(Embedder):
@@ -116,6 +122,61 @@ class HttpEmbedder(Embedder):
         return _normalize(np.array(vectors))
 
 
+class SshEmbedder(Embedder):
+    """Talks to a long-running server_embed.py over SSH: one JSON request per line.
+
+    -> {"texts": [...], "query": bool}   <- {"vectors": "<base64 float16>", "shape": [n, dim]}
+    The server applies the model's own query prompt, so no prefix is added here.
+
+    MICCAI_BRAIN_SSH is the command that opens the connection. A {remote} placeholder marks where
+    the remote command goes (otherwise it is appended in single quotes), for example
+      wsl.exe -e bash -lc "ssh -o BatchMode=yes -p 2361 user@host '{remote}'"
+    MICCAI_BRAIN_SSH_REMOTE is the remote command (DEEP_MODEL is set from the spec).
+    """
+
+    DEFAULT_REMOTE = "~/projects/embed-eval/venv/bin/python ~/projects/embed-eval/server_embed.py"
+
+    def __init__(self, model: str):
+        self.model = model
+        self.spec = f"ssh:{model}"
+        ssh = os.environ.get("MICCAI_BRAIN_SSH")
+        if not ssh:
+            raise RuntimeError("Set MICCAI_BRAIN_SSH to the ssh command for the GPU server")
+        remote = os.environ.get("MICCAI_BRAIN_SSH_REMOTE", self.DEFAULT_REMOTE)
+        remote = f"DEEP_MODEL={model} {remote}"
+        command = ssh.replace("{remote}", remote) if "{remote}" in ssh else f"{ssh} '{remote}'"
+        self.batch = int(os.environ.get("MICCAI_BRAIN_EMBED_BATCH", "64"))
+        self.proc = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                     text=True, encoding="utf-8", bufsize=1)
+        while True:
+            line = self.proc.stdout.readline()
+            if not line:
+                raise RuntimeError(f"embedding server exited before it was ready (command: {command})")
+            msg = json.loads(line) if line.strip().startswith("{") else {}
+            if msg.get("error"):
+                raise RuntimeError(f"embedding server: {msg['error']}")
+            if msg.get("ready"):
+                break
+        self.dim = self.embed(["dimension probe"]).shape[1]
+
+    def embed(self, texts, query=False):
+        out = []
+        for start in range(0, len(texts), self.batch):
+            self.proc.stdin.write(json.dumps({"texts": texts[start : start + self.batch], "query": bool(query)}) + "\n")
+            self.proc.stdin.flush()
+            answer = json.loads(self.proc.stdout.readline() or '{"error": "server closed"}')
+            if "error" in answer:
+                raise RuntimeError(f"embedding server: {answer['error']}")
+            vec = np.frombuffer(base64.b64decode(answer["vectors"]), dtype=np.float16).reshape(answer["shape"])
+            out.append(vec.astype(np.float32))
+        return _normalize(np.vstack(out))
+
+    def close(self):
+        if self.proc.poll() is None:
+            self.proc.stdin.close()
+            self.proc.wait(timeout=30)
+
+
 def get_embedder(spec: str | None = None) -> Embedder:
     spec = spec or os.environ.get("MICCAI_BRAIN_EMBEDDER", DEFAULT_SPEC)
     provider, _, model = spec.partition(":")
@@ -123,6 +184,8 @@ def get_embedder(spec: str | None = None) -> Embedder:
         return HashEmbedder(model)
     if provider == "sentence-transformers":
         return SentenceTransformerEmbedder(model)
+    if provider == "ssh":
+        return SshEmbedder(model)
     if provider in ("ollama", "openai"):
         return HttpEmbedder(provider, model)
     raise ValueError(f"Unknown embedder provider: {provider!r}")

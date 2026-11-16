@@ -123,6 +123,8 @@ def build(root: Path, db_path: Path, embedder_spec: str | None = None, modalitie
                     a, b = sorted((pid, ids[j]))
                     conn.execute("INSERT OR REPLACE INTO paper_edges VALUES (?, ?, ?)", (a, b, float(sims[i, j])))
 
+    if hasattr(embedder, "close"):
+        embedder.close()
     stats = {
         "papers": len(papers),
         "chunks": len(rows),

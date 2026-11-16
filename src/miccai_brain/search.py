@@ -1,6 +1,7 @@
 """Hybrid search: FTS5 BM25 + cosine vectors, fused per paper with reciprocal rank fusion."""
 from __future__ import annotations
 
+import os
 import re
 import sqlite3
 from dataclasses import dataclass, field
@@ -30,7 +31,10 @@ class Brain:
     def __init__(self, db_path=store.DEFAULT_DB, embedder_spec: str | None = None):
         self.conn = store.connect(db_path)
         self.conn.row_factory = sqlite3.Row
-        self.embedder_spec = embedder_spec or store.get_meta(self.conn, "embedder")
+        # Queries can use a different (compatible) embedder than the build, e.g. the same Qwen3
+        # model run locally with sentence-transformers instead of the GPU server.
+        self.embedder_spec = (embedder_spec or os.environ.get("MICCAI_BRAIN_QUERY_EMBEDDER")
+                              or store.get_meta(self.conn, "embedder"))
         self._embedder = None
         self._matrix = None
 

@@ -1,4 +1,6 @@
 import csv
+import os
+import sys
 import json
 import tempfile
 import unittest
@@ -120,3 +122,38 @@ class MiccaiBrainTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+FAKE_SERVER = """
+import base64, json, sys
+import numpy as np
+print(json.dumps({"ready": True}), flush=True)
+for line in sys.stdin:
+    req = json.loads(line)
+    vec = np.ones((len(req["texts"]), 4), dtype=np.float16) * (2 if req["query"] else 1)
+    print(json.dumps({"vectors": base64.b64encode(vec.tobytes()).decode(), "shape": list(vec.shape)}), flush=True)
+"""
+
+
+class SshEmbedderTest(unittest.TestCase):
+    def test_speaks_server_embed_protocol(self):
+        from src.miccai_brain.embed import get_embedder
+        with tempfile.TemporaryDirectory() as tmp:
+            script = Path(tmp) / "server.py"
+            script.write_text(FAKE_SERVER)
+            env = {"MICCAI_BRAIN_SSH": "{remote}", "MICCAI_BRAIN_SSH_REMOTE": f'"{sys.executable}" "{script}"'}
+            old = {k: os.environ.get(k) for k in env}
+            os.environ.update(env)
+            try:
+                embedder = get_embedder("ssh:test-model")
+                vectors = embedder.embed(["a"] * 70, query=True)
+                embedder.close()
+            finally:
+                for k, v in old.items():
+                    if v is None:
+                        os.environ.pop(k, None)
+                    else:
+                        os.environ[k] = v
+        self.assertEqual(embedder.dim, 4)
+        self.assertEqual(vectors.shape, (70, 4))
+        self.assertAlmostEqual(float((vectors[0] ** 2).sum()), 1.0, places=5)

@@ -16,8 +16,22 @@ Hybrid semantic search and topic graphs over all MICCAI 2026 papers, inspired by
 
 Run from the miccai2026 folder (it needs `Published_papers/<modality>/<paper>/` folders).
 
+Settings can live in the `.env` of the miccai2026 folder (the CLI reads it).
+
 ```bash
-# embeddings server (OpenAI-compatible /v1/embeddings, e.g. vLLM serving Qwen3-Embedding-4B)
+# GPU server over SSH running server_embed.py (JSON lines on stdin/stdout); {remote} marks
+# where the remote command goes
+MICCAI_BRAIN_EMBEDDER=ssh:Qwen/Qwen3-Embedding-0.6B
+MICCAI_BRAIN_SSH=wsl.exe -e bash -lc "ssh -o BatchMode=yes -p <port> <user>@<host> '{remote}'"
+# optional: embed search queries locally with the same model instead of over SSH
+MICCAI_BRAIN_QUERY_EMBEDDER=sentence-transformers:Qwen/Qwen3-Embedding-0.6B
+OPENROUTER_API_KEY=...
+```
+
+Other embedders:
+
+```bash
+# OpenAI-compatible /v1/embeddings server (vLLM, TEI, ...)
 export MICCAI_BRAIN_EMBEDDER="openai:Qwen/Qwen3-Embedding-4B"
 export MICCAI_BRAIN_EMBED_URL="http://<server>:<port>/v1"
 export MICCAI_BRAIN_EMBED_KEY_VAR=""            # name of the env var holding the key, if any

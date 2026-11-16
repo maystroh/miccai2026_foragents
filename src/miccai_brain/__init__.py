@@ -20,4 +20,7 @@ def load_dotenv(path: str | Path = ".env") -> None:
             continue
         key, _, value = line.partition("=")
         key = key.strip().removeprefix("export ").strip()
-        os.environ.setdefault(key, value.strip().strip("'\""))
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+            value = value[1:-1]  # only strip one pair of surrounding quotes
+        os.environ.setdefault(key, value)
