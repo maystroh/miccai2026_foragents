@@ -53,6 +53,8 @@ def main(argv=None) -> int:
     x.add_argument("--limit", type=int, help="only this many papers (pilot)")
     x.add_argument("--workers", type=int, default=4)
     x.add_argument("--force", action="store_true")
+    x.add_argument("--max-cost", type=float, default=5.0, help="stop once this many USD are spent in this run (default: %(default)s)")
+    x.add_argument("--spent", action="store_true", help="only print the total cost recorded in the cache")
 
     args = parser.parse_args(argv)
     load_dotenv(Path(getattr(args, "root", ".")) / ".env")
@@ -75,8 +77,12 @@ def main(argv=None) -> int:
         model = args.model or os.environ.get("MICCAI_BRAIN_LLM_MODEL")
         if not model:
             parser.error("give --model or set MICCAI_BRAIN_LLM_MODEL")
+        if args.spent:
+            from .extract_llm import spent
+            print(json.dumps(spent(Path(args.root))))
+            return 0
         usage = extract_all(Path(args.root), load_papers(Path(args.root), args.modality), model,
-                            args.workers, args.force, args.limit)
+                            args.workers, args.force, args.limit, args.max_cost)
         print(json.dumps(usage))
         return 1 if usage["failed"] else 0
     if args.cmd == "serve":

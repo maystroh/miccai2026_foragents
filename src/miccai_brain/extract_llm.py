@@ -84,6 +84,7 @@ def call_llm(prompt: str, model: str, retries: int = 4) -> tuple[dict, dict]:
         "temperature": 0,
         "max_tokens": 1500,
         "response_format": {"type": "json_object"},
+        "usage": {"include": True},  # OpenRouter returns the real cost in usage.cost
     }
     for attempt in range(retries):
         req = urllib.request.Request(url, data=json.dumps(payload).encode(), method="POST")
@@ -102,7 +103,8 @@ def call_llm(prompt: str, model: str, retries: int = 4) -> tuple[dict, dict]:
 
 
 def extract_all(root: Path, papers: list[Paper], model: str, workers: int = 4, force: bool = False,
-                limit: int | None = None, log=print) -> dict:
+                limit: int | None = None, max_cost: float | None = None, log=print) -> dict:
+    """Extract and cache; stops submitting new papers once the spent cost reaches max_cost (USD)."""
     todo = []
     for paper in papers:
         cached = load_cached(root, paper.paper_id)
@@ -110,8 +112,9 @@ def extract_all(root: Path, papers: list[Paper], model: str, workers: int = 4, f
             todo.append(paper)
     if limit:
         todo = todo[:limit]
-    log(f"LLM extraction with {model}: {len(todo)} papers to do, {len(papers) - len(todo)} cached")
-    usage = {"prompt_tokens": 0, "completion_tokens": 0, "cost": 0.0, "failed": 0}
+    log(f"LLM extraction with {model}: {len(todo)} papers to do, {len(papers) - len(todo)} cached"
+        + (f", budget ${max_cost:.2f}" if max_cost else ""))
+    usage = {"papers": 0, "prompt_tokens": 0, "completion_tokens": 0, "cost": 0.0, "failed": 0, "stopped_by_budget": False}
 
     def work(paper: Paper):
         try:
@@ -126,17 +129,38 @@ def extract_all(root: Path, papers: list[Paper], model: str, workers: int = 4, f
         return paper, used, None
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        for i, (paper, used, error) in enumerate(pool.map(work, todo), 1):
-            if error:
-                usage["failed"] += 1
-                log(f"  ! {paper.paper_id}: {error}")
-                continue
-            for key in ("prompt_tokens", "completion_tokens"):
-                usage[key] += int(used.get(key, 0) or 0)
-            usage["cost"] += float(used.get("cost", 0) or 0)
-            if i % 25 == 0 or i == len(todo):
-                log(f"  {i}/{len(todo)}  tokens in {usage['prompt_tokens']:,} out {usage['completion_tokens']:,}  cost ${usage['cost']:.3f}")
+        for start in range(0, len(todo), workers * 5):
+            if max_cost is not None and usage["cost"] >= max_cost:
+                usage["stopped_by_budget"] = True
+                log(f"  budget of ${max_cost:.2f} reached; stopping. Re-run to continue from the cache.")
+                break
+            for paper, used, error in pool.map(work, todo[start : start + workers * 5]):
+                if error:
+                    usage["failed"] += 1
+                    log(f"  ! {paper.paper_id}: {error}")
+                    continue
+                usage["papers"] += 1
+                for key in ("prompt_tokens", "completion_tokens"):
+                    usage[key] += int(used.get(key, 0) or 0)
+                usage["cost"] += float(used.get("cost", 0) or 0)
+            log(f"  {usage['papers']}/{len(todo)}  tokens in {usage['prompt_tokens']:,} out {usage['completion_tokens']:,}"
+                f"  cost ${usage['cost']:.4f}")
+    if usage["papers"]:
+        usage["cost_per_paper"] = round(usage["cost"] / usage["papers"], 5)
+    usage["cost"] = round(usage["cost"], 4)
     return usage
+
+
+def spent(root: Path, model: str | None = None) -> dict:
+    """Total recorded cost of the cached extractions."""
+    total, n = 0.0, 0
+    for path in (Path(root) / CACHE_DIR).glob("*.json"):
+        record = json.loads(path.read_text(encoding="utf-8"))
+        if model and record.get("model") != model:
+            continue
+        total += float((record.get("usage") or {}).get("cost", 0) or 0)
+        n += 1
+    return {"papers": n, "cost": round(total, 4)}
 
 
 def llm_concepts(record: dict | None) -> tuple[list[tuple[str, str]], list[str]]:
