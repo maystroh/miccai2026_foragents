@@ -139,6 +139,21 @@ class ConceptMergeTest(unittest.TestCase):
                                   "d": [("state space model", "method")]})
         self.assertEqual(mapping, {"f1-score": "f1 score", "state-space models": "state space model"})
 
+    def test_stoplist_matches_any_spelling(self):
+        from src.miccai_brain.extract import fold_key, is_stopped
+        keys = {fold_key(s) for s in ["3d u-net", "resnet-50", "multilayer perceptron", "neural network", "lung"]}
+        for term in ["3d unet", "resnet50", "multi-layer perceptron", "neural networks", "lungs"]:
+            self.assertTrue(is_stopped(term, keys), term)
+        self.assertFalse(is_stopped("liver", keys))
+
+    def test_majority_kind_keeps_a_method_visible(self):
+        from src.miccai_brain.extract import majority_kinds
+        per_paper = {f"m{i}": [("grad-cam", "method")] for i in range(9)}
+        per_paper.update({f"x{i}": [("grad-cam", "metric")] for i in range(2)})
+        per_paper["t"] = [("probe", "metric")]
+        per_paper["u"] = [("probe", "method")]
+        self.assertEqual(majority_kinds(per_paper), {"grad-cam": "method", "probe": "method"})
+
     def test_body_tags_are_split_and_win_over_keywords(self):
         from src.miccai_brain.corpus import Paper
         from src.miccai_brain.extract import paper_concepts

@@ -14,7 +14,8 @@ from .chunking import chunk_paper
 from .corpus import load_papers
 from .embed import get_embedder
 from .extract import (TAG_KINDS, load_aliases, load_dataset_patterns, load_stoplist, normalize_concept,
-                      paper_concepts, paper_datasets, merge_variants)
+                      paper_concepts, paper_datasets, merge_variants,
+                      fold_key, is_stopped, majority_kinds)
 from .extract_llm import llm_concepts, load_cached
 
 
@@ -82,8 +83,7 @@ def _build_into(conn, cache, root, papers, aliases, patterns, stoplist, embedder
             if canonical.lower() not in known:
                 known.add(canonical.lower())
                 found_datasets.append((canonical, 1))
-        # MICCAI tags are kept as published; author keywords and extracted terms skip the stoplist.
-        per_paper[paper.paper_id] = [(c, k) for c, k in found_concepts if c and (k in TAG_KINDS or c not in stoplist)]
+        per_paper[paper.paper_id] = [(c, k) for c, k in found_concepts if c]
         conn.executemany("INSERT OR IGNORE INTO paper_datasets VALUES (?, ?, ?)",
                          [(paper.paper_id, d, n) for d, n in found_datasets])
         rows.append((paper.paper_id, "abstract", "Title and abstract", f"{paper.title}\n\n{paper.abstract}", paper.title))
@@ -93,13 +93,18 @@ def _build_into(conn, cache, root, papers, aliases, patterns, stoplist, embedder
             for review in paper.reviews:
                 label = review.role.replace("_", " ") + (f" ({review.rating})" if review.rating else "")
                 rows.append((paper.paper_id, "review", label, review.text, paper.title))
-    # Spelling variants (hyphens, plurals) collapse to the most common form; tags stay as published.
-    variants = merge_variants({pid: [(c, k) for c, k in pairs if k not in TAG_KINDS]
-                               for pid, pairs in per_paper.items()})
+    # MICCAI tags are kept as published. Other concepts: drop stoplisted ones (any spelling), collapse
+    # spelling variants (hyphens, plurals) to the most common form, and give each concept one kind.
+    stop_keys = {fold_key(s) for s in stoplist}
+    free = {pid: [(c, k) for c, k in pairs if k not in TAG_KINDS and not is_stopped(c, stop_keys)]
+            for pid, pairs in per_paper.items()}
+    variants = merge_variants(free)
+    free = {pid: [(variants.get(c, c), k) for c, k in pairs] for pid, pairs in free.items()}
+    kinds = majority_kinds(free)
     for pid, pairs in per_paper.items():
+        tags = [(c, k) for c, k in pairs if k in TAG_KINDS]
         conn.executemany("INSERT OR IGNORE INTO paper_concepts VALUES (?, ?, ?)",
-                         [(pid, c, k) for c, k in ((c if k in TAG_KINDS else variants.get(c, c), k) for c, k in pairs)
-                          if k in TAG_KINDS or c not in stoplist])
+                         [(pid, c, k) for c, k in tags] + [(pid, c, kinds[c]) for c, _ in free[pid]])
     log(f"{len(rows)} chunks, {len(variants)} concept spellings merged")
 
     # Embed, reusing cached vectors for unchanged text.

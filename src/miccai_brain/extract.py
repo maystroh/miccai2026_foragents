@@ -68,6 +68,25 @@ def merge_variants(per_paper: dict[str, list[tuple[str, str]]]) -> dict[str, str
     return mapping
 
 
+KIND_ORDER = ("task", "method", "keyword", "anatomy", "metric")  # tie-break: metrics last, as they are hidden
+
+
+def is_stopped(concept: str, stop_keys: set[str]) -> bool:
+    """Stoplist match that ignores hyphens, spaces and plurals ("resnet50" matches "resnet-50")."""
+    return fold_key(concept) in stop_keys
+
+
+def majority_kinds(per_paper: dict[str, list[tuple[str, str]]]) -> dict[str, str]:
+    """One kind per concept: the kind most papers use, so a rare metric label cannot hide a method."""
+    counts: dict[str, dict[str, int]] = {}
+    for pairs in per_paper.values():
+        for concept, kind in pairs:
+            counts.setdefault(concept, {}).setdefault(kind, 0)
+            counts[concept][kind] += 1
+    rank = {k: i for i, k in enumerate(KIND_ORDER)}
+    return {c: min(ks, key=lambda k: (-ks[k], rank.get(k, len(rank)), k)) for c, ks in counts.items()}
+
+
 def load_dataset_patterns(root: Path) -> list[tuple[str, re.Pattern]]:
     path = root / INPUTS / "datasets.csv"
     if not path.exists():
