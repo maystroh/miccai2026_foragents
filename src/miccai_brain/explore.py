@@ -73,6 +73,7 @@ class Explorer:
             load_claims(conn, root)
         self._sets: dict[tuple[str, str], set[str]] | None = None
         self._vectors: dict[str, np.ndarray] | None = None
+        self._text: dict[str, str] | None = None
         self._titles = {r[0]: r[1] for r in conn.execute("SELECT paper_id, title FROM papers")}
 
     # ------------------------------------------------------------ indexes
@@ -122,6 +123,56 @@ class Explorer:
     def papers_for(self, name: str, kind: str | None = None) -> set[str]:
         keys = self.resolve(name, kind)
         return set().union(*(self._index()[k] for k in keys)) if keys else set()
+
+    def papers_about(self, about: str) -> set[str]:
+        """Papers whose title or abstract mentions every comma-separated term; "|" separates synonyms.
+        Example: "breast, MRI|magnetic resonance|DCE". This finds a paper's main subject, unlike concept
+        tags, which also match benchmarks that merely include one dataset of that kind."""
+        if self._text is None:
+            self._text = {pid: f"{t}\n{a}".lower() for pid, t, a in
+                          self.conn.execute("SELECT paper_id, title, abstract FROM papers")}
+        groups = [[w.strip().lower() for w in part.split("|") if w.strip()] for part in about.split(",")]
+        groups = [g for g in groups if g]
+        pats = [re.compile("|".join(r"\b" + re.escape(w) for w in g)) for g in groups]
+        return {pid for pid, text in self._text.items() if pats and all(p.search(text) for p in pats)}
+
+    def select(self, concept: str | None = None, concept_kind: str | None = None, modality: str | None = None,
+               about: str | None = None, paper_ids: list[str] | None = None) -> set[str] | None:
+        """Intersection of every filter given; None means the whole corpus."""
+        pids = None
+        for part in (set(paper_ids) if paper_ids else None,
+                     self.papers_for(concept, concept_kind) if concept else None,
+                     self.papers_about(about) if about else None,
+                     self._scope(modality)):
+            if part is not None:
+                pids = part if pids is None else pids & part
+        return pids
+
+    def find_papers_about(self, about: str, modality: str | None = None, limit: int = 100) -> list[dict]:
+        pids = self.select(modality=modality, about=about) or set()
+        return self._cite(pids, limit)
+
+    def paper_reviews(self, paper_ids: list[str], part: str = "weaknesses", max_chars: int = 1200) -> list[dict]:
+        """Compact reviews for a few papers: per reviewer the rating and the weaknesses (or the full text),
+        cut to max_chars, plus the start of the meta review. Far cheaper than get_paper with reviews."""
+        out = []
+        for pid in paper_ids:
+            reviews = []
+            for section, text in self.conn.execute(
+                    "SELECT section, text FROM chunks WHERE paper_id = ? AND kind = 'review' ORDER BY id", (pid,)):
+                if section.startswith("author feedback"):
+                    continue
+                body = text
+                if part == "weaknesses" and section.startswith("reviewer"):
+                    m = re.search(r"Weaknesses:\s*(.*?)(?:\n\s*\n[A-Z][\w ]{2,40}:|\Z)", text, re.S)
+                    body = m.group(1) if m else ""
+                body = re.sub(r"\s+", " ", body).strip()
+                if len(body) > max_chars:
+                    body = body[:max_chars].rsplit(" ", 1)[0] + " …"
+                if body:
+                    reviews.append({"who": section, "text": body})
+            out.append({"paper_id": pid, "title": self._titles.get(pid, ""), "reviews": reviews})
+        return out
 
     def _items(self, kind: str, scope: set[str] | None, min_papers: int) -> dict[str, set[str]]:
         out = {}
@@ -256,16 +307,12 @@ class Explorer:
                 "together": self._cite(both, top), "closest_one_sided": near}
 
     def claims(self, kind: str = "limitation", concept: str | None = None, concept_kind: str | None = None,
-               modality: str | None = None, query: str | None = None, limit: int = 40) -> list[dict]:
-        """Contributions or limitations the LLM extracted, filtered by concept, topic and/or keywords."""
+               modality: str | None = None, query: str | None = None, limit: int = 40,
+               about: str | None = None, paper_ids: list[str] | None = None) -> list[dict]:
+        """Contributions or limitations the LLM extracted, filtered by concept, topic, subject and/or keywords."""
         if not has_claims(self.conn):
             return []
-        pids = None
-        if concept:
-            pids = self.papers_for(concept, concept_kind)
-        scope = self._scope(modality)
-        if scope is not None:
-            pids = scope if pids is None else pids & scope
+        pids = self.select(concept, concept_kind, modality, about, paper_ids)
         params: list = [kind]
         sql = "SELECT c.paper_id, c.text FROM paper_claims c"
         if query:
@@ -296,9 +343,10 @@ class Explorer:
         return out
 
     def limitation_themes(self, concept: str | None = None, concept_kind: str | None = None,
-                          modality: str | None = None, top: int = 15) -> list[dict]:
+                          modality: str | None = None, top: int = 15, about: str | None = None,
+                          paper_ids: list[str] | None = None) -> list[dict]:
         """Recurring limitation themes (keyword buckets) with example papers, for a concept or topic."""
-        rows = self.claims("limitation", concept, concept_kind, modality, limit=100000)
+        rows = self.claims("limitation", concept, concept_kind, modality, limit=100000, about=about, paper_ids=paper_ids)
         theme_papers: dict[str, set] = defaultdict(set)
         examples: dict[str, list] = defaultdict(list)
         for row in rows:
@@ -307,7 +355,7 @@ class Explorer:
                 if re.search(pattern, text):
                     theme_papers[theme].add(row["paper_id"])
                     if len(examples[theme]) < 3:
-                        examples[theme].append({"paper_id": row["paper_id"], "text": row["text"]})
+                        examples[theme].append({"paper_id": row["paper_id"], "text": row["text"][:200]})
         # share = fraction of papers with at least one extracted limitation that hit this theme
         total = len({row["paper_id"] for row in rows}) or 1
         ranked = sorted(theme_papers.items(), key=lambda kv: (-len(kv[1]), kv[0]))[:top]
@@ -315,13 +363,11 @@ class Explorer:
                 for t, p in ranked]
 
     def reviewer_weaknesses(self, concept: str | None = None, concept_kind: str | None = None,
-                            modality: str | None = None, top: int = 15, examples: int = 3) -> dict:
+                            modality: str | None = None, top: int = 15, examples: int = 3,
+                            about: str | None = None, paper_ids: list[str] | None = None) -> dict:
         """What reviewers criticise for papers with a concept and/or in a topic: weakness themes with the
         share of reviewed papers hit and short quotes. Uses the "Weaknesses:" part of each review."""
-        pids = self.papers_for(concept, concept_kind) if concept else None
-        scope = self._scope(modality)
-        if scope is not None:
-            pids = scope if pids is None else pids & scope
+        pids = self.select(concept, concept_kind, modality, about, paper_ids)
         counts: Counter = Counter()
         quotes: dict[str, list] = defaultdict(list)
         reviewed = set()
@@ -341,12 +387,13 @@ class Explorer:
                     if theme not in hit and re.search(pattern, low):
                         hit.add(theme)
                         if len(quotes[theme]) < examples:
-                            quotes[theme].append({"paper_id": pid, "text": sentence.strip()[:300]})
+                            quotes[theme].append({"paper_id": pid, "text": sentence.strip()[:200]})
             for theme in hit:
                 counts[(theme, pid)] += 1
         per_theme = Counter(theme for theme, _ in counts)
         n = len(reviewed) or 1
         return {"papers_reviewed": len(reviewed),
+                "papers": sorted(reviewed)[:40] if pids is not None else "whole corpus",
                 "themes": [{"theme": t, "papers": k, "share": round(k / n, 3), "examples": quotes[t]}
                            for t, k in per_theme.most_common(top)]}
 

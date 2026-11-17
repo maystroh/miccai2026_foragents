@@ -22,6 +22,8 @@ TOOLS = [
      "paper_id", "What did 0920-Paper1730 do and what did reviewers say?", "paper 0920-Paper1730"),
     ("Find", "related_papers", "Most similar papers to one paper, with shared concepts.",
      "paper_id, modality", "What is closest to 0378-Paper3872?", "related 0378-Paper3872"),
+    ("Find", "find_papers_about", "Papers whose main subject matches (terms in title or abstract; | for synonyms).",
+     "about, modality", "Which papers are really about breast MRI?", 'about "breast, MRI|magnetic resonance|DCE"'),
     ("Find", "papers_with", "Papers tagged with a concept or using a dataset.",
      "concept_or_dataset, modality", "Which papers use MAMA-MIA?", 'concept "MAMA-MIA"'),
     ("Map", "list_topics", "All topics (modality folders) with paper counts.", "-", "What topics exist?", "topic"),
@@ -39,17 +41,21 @@ TOOLS = [
     ("Gaps", "bridge_papers", "Papers that combine A and B, and the closest one-sided papers (prior work).",
      "name_a, name_b", "Who is closest to combining report generation and ultrasound?",
      'bridge "radiology report generation" ultrasounds'),
-    ("Problems", "paper_claims", "The authors' own limitations or contributions, filtered by concept, topic or words.",
-     "kind, concept, modality, query", "What limitations do breast MRI papers admit?", "claims -c breast -m MRI"),
+    ("Problems", "paper_claims", "The authors' own limitations or contributions, filtered by concept, topic, subject or words.",
+     "kind, concept, modality, about, query", "What limitations do breast MRI papers admit?", "claims -c breast -m MRI"),
     ("Problems", "limitation_themes", "Recurring limitation themes with share of papers and examples.",
      "concept, modality", "What do MRI authors most often admit as limits?", "claims --themes -m MRI"),
-    ("Problems", "reviewer_weaknesses", "What reviewers criticised for a topic or concept, with quotes.",
-     "concept, modality", "What do reviewers attack in breast papers?", "weaknesses -c breast"),
+    ("Problems", "reviewer_weaknesses", "What reviewers criticised, as themes with shares, quotes and the papers counted.",
+     "about, concept, modality, paper_ids", "What do reviewers criticise in breast MRI papers?",
+     'weaknesses --about "breast, MRI|magnetic resonance|DCE"'),
+    ("Problems", "paper_reviews", "Compact reviewer weaknesses for a few papers (cheap way to read reviews).",
+     "paper_ids, part, max_chars", "What exactly did reviewers say about 0378-Paper3872?", "reviews 0378-Paper3872"),
     ("Help", "brain_guide", "This guide.", "-", "What can the brain do?", "guide"),
 ]
 
 WORKFLOWS = [
     ("Answer a question", "search_papers (2-3 phrasings) -> get_paper on the top hits -> answer citing paper_ids"),
+    ("What reviewers say about a subject", "reviewer_weaknesses(about=...) -> paper_reviews on 2-3 of its papers to check"),
     ("Understand a topic", "topic_overview -> vocabulary (task, method, dataset) -> limitation_themes -> reviewer_weaknesses"),
     ("Find an idea", "find_gaps / coverage_matrix -> search_papers to check it is really missing -> bridge_papers for prior work"),
     ("Stress-test a plan", "reviewer_weaknesses for its topic -> /advisor <idea file>"),
@@ -72,19 +78,24 @@ def guide() -> dict:
         "extras": [{"name": n, "what": w} for n, w in EXTRAS],
         "notes": ["Every graph tool works offline; only semantic search needs the GPU server.",
                   "Counts come from Haiku extraction and tags: open a few papers before relying on a number.",
+                  "For a subject (breast MRI, fetal ultrasound...) filter with about=, not concept=: tags also match general benchmarks.",
+                  "Save tokens: summary tools first; open at most 3 papers with get_paper; read reviews with paper_reviews.",
                   "Outside-MICCAI novelty is never checked by these tools."],
     }
 
 
-def guide_markdown() -> str:
+def guide_markdown(cli: bool = True) -> str:
+    """cli=False leaves out the CLI column (shorter, for agents using the MCP tools)."""
     g = guide()
     lines = ["# MICCAI brain: tools at a glance", ""]
     group = None
     for t in g["tools"]:
         if t["group"] != group:
             group = t["group"]
-            lines += ["", f"## {group}", "", "| Tool | What it answers | Example | CLI |", "|---|---|---|---|"]
-        lines.append(f"| `{t['tool']}` | {t['what']} | {t['example']} | `{t['cli'].replace('python -m src.miccai_brain ', '')}` |")
+            head = "| Tool | What it answers | Example |" + (" CLI |" if cli else "")
+            lines += ["", f"## {group}", "", head, "|---|---|---|" + ("---|" if cli else "")]
+        row = f"| `{t['tool']}` | {t['what']} | {t['example']} |"
+        lines.append(row + (f" `{t['cli'].replace('python -m src.miccai_brain ', '')}` |" if cli else ""))
     lines += ["", "## Kinds you can ask about", ""] + [f"- **{k}**: {v}" for k, v in g["kinds"].items()]
     lines += ["", "## Typical sequences", ""] + [f"- **{w['goal']}**: {w['steps']}" for w in g["workflows"]]
     lines += ["", "## Also", ""] + [f"- `{e['name']}`: {e['what']}" for e in g["extras"]]

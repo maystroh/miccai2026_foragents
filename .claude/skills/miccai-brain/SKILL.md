@@ -13,14 +13,16 @@ otherwise run the same queries with the CLI from the repo root, which prints JSO
 | Need | MCP tool | CLI |
 |---|---|---|
 | Find papers on a question | `search_papers` | `search "<query>" [-m MRI] [--reviews] [--mode keyword]` |
-| Read one paper (+ contributions, limitations, reviews) | `get_paper` | `paper <id>` |
+| Read one paper (+ contributions, limitations) | `get_paper` | `paper <id>` |
+| Papers whose main subject is X (title/abstract) | `find_papers_about` | `about "breast, MRI\|DCE"` |
+| What reviewers said about a few papers (weaknesses only) | `paper_reviews` | `reviews <id> <id>` |
 | Exact spellings / most common names of a kind | `vocabulary` | `vocab <kind> [-m MRI]` |
 | What goes with X (lift) | `neighbors` | `neighbors "<name>" [-k kind] [-o other_kind] [-m MRI]` |
 | Coverage grid between two kinds | `coverage_matrix` | `matrix <row_kind> <col_kind> [-m MRI] [--rows ..] [--cols ..]` |
 | White-space pairs | `find_gaps` | `gaps <kind_a> <kind_b> [-m MRI] [--focus text]` |
 | Prior work for combining A and B | `bridge_papers` | `bridge "<A>" "<B>"` |
 | Authors' own limitations / contributions | `paper_claims`, `limitation_themes` | `claims [-c concept] [-m MRI] [-q words] [--themes]` |
-| What reviewers criticised for a topic or concept | `reviewer_weaknesses` | `weaknesses [-c concept] [-m MRI]` |
+| What reviewers criticised for a subject, topic or concept | `reviewer_weaknesses` | `weaknesses [--about ..] [-c concept] [-m MRI]` |
 | Topics, topic overview, papers with a tag, similar papers | `list_topics`, `topic_overview`, `papers_with`, `related_papers` | `topic`, `concept`, `related` |
 
 Kinds: `task`, `method`, `anatomy`, `metric`, `keyword`, `dataset`, `modality` (topic folder such as
@@ -29,6 +31,18 @@ ViT, transformer, ...) are deliberately not concepts.
 
 Semantic search needs the query embedder (the GPU server in `.env`). If it is unreachable, hybrid
 search falls back to keywords and returns a warning; every graph tool works without it.
+
+## Token budget
+
+The brain can return a lot of text, so query it cheaply:
+
+- Use the summary tools first (`topic_overview`, `vocabulary`, `limitation_themes`, `reviewer_weaknesses`);
+  they already count and quote across many papers.
+- For a subject (breast MRI, fetal ultrasound, ...) filter with `about=` (comma = AND, `|` = synonyms),
+  not `concept=`: concept tags also match benchmarks that include one dataset of that kind.
+- Open at most 3 papers with `get_paper`, and read reviews with `paper_reviews` (weaknesses only),
+  never `get_paper(include_reviews=true)` for several papers.
+- Keep `limit`/`top` small (10 to 20) unless you need the full list.
 
 ## Answering a question
 
@@ -51,7 +65,7 @@ Work in this order and keep notes of every query you run:
    - `coverage_matrix` for the same pairs, to see the zero cells in context.
    - `limitation_themes` and `paper_claims` (limitations) for the area: problems the authors
      themselves left open, repeated across many papers.
-   - Reviews (`search_papers` with `include_reviews=true`) for what reviewers keep asking for.
+   - Reviews (`reviewer_weaknesses` for the area, `paper_reviews` for a few papers) for what reviewers keep asking for.
 3. **Kill weak candidates.** For each one: `search_papers` for the combination in plain words (and
    with `include_reviews`), and `bridge_papers` to see who is closest. Drop it if a paper already does
    it, if the pair is only an artefact of naming, or if there is no public dataset to test it on

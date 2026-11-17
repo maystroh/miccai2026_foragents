@@ -193,7 +193,7 @@ class Brain:
         return [dict(r) for r in rows if allowed is None or r["paper_id"] in allowed][:limit]
 
 
-def snippet(text: str, query: str, width: int = 320) -> str:
+def snippet(text: str, query: str, width: int = 240) -> str:
     text = re.sub(r"\s+", " ", text)
     terms = [t.lower() for t in re.findall(r"\w{3,}", query) if t.lower() not in STOPWORDS]
     lower = text.lower()

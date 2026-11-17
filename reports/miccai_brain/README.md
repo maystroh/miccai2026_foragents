@@ -219,7 +219,7 @@ Type `/brain-help` (or ask the agent to call `brain_guide`) to see every tool wi
 | Tool | What it gives the agent |
 |---|---|
 | `search_papers` | hybrid search; falls back to keywords with a warning if the GPU server is down |
-| `get_paper` | metadata, concepts, datasets, LLM contributions and limitations, reviews |
+| `get_paper` | metadata, concepts by kind, datasets, LLM contributions and limitations (reviews only if asked) |
 | `related_papers`, `list_topics`, `topic_overview`, `papers_with` | navigation |
 | `vocabulary` | most common names of a kind (task, method, anatomy, dataset, modality, ...) |
 | `neighbors` | what co-occurs with a concept, dataset or topic, ranked by lift |
@@ -227,7 +227,13 @@ Type `/brain-help` (or ask the agent to call `brain_guide`) to see every tool wi
 | `find_gaps` | pairs that are each common, rarely combined, and semantically close |
 | `bridge_papers` | papers combining A and B, and the closest papers that have only one side |
 | `paper_claims`, `limitation_themes` | the authors' own limitations, grouped into recurring themes |
-| `reviewer_weaknesses` | what reviewers criticised for a topic or concept, with quotes |
+| `reviewer_weaknesses` | what reviewers criticised for a subject (`about=`), topic or concept, with quotes |
+| `find_papers_about` | papers whose title or abstract names the subject (`,` = and, `\|` = synonyms) |
+| `paper_reviews` | the reviewers' weaknesses for a few papers, cut short |
+
+Tool results are sent as one line of JSON with empty fields dropped, so a call costs far fewer tokens
+than the MCP default (indented JSON, and lists sent twice). To keep a session cheap: summary tools first,
+`about=` for a subject, at most 3 `get_paper` calls, and `paper_reviews` for reviews.
 
 For a full idea hunt, the `miccai-ideas` skill walks through framing, mapping, candidates, checks and a
 shortlist one step at a time, saving the trail in `runs/<date>-<slug>/`. `/advisor <idea file>` sends an

@@ -82,10 +82,19 @@ def main(argv=None) -> int:
     cl.add_argument("-c", "--concept")
     cl.add_argument("-m", "--modality")
     cl.add_argument("-q", "--query")
+    cl.add_argument("--about")
     cl.add_argument("-n", "--limit", type=int, default=40)
     cl.add_argument("--themes", action="store_true", help="group limitations into recurring themes")
     cl.add_argument("--reload", action="store_true", help="refill the claims table from the LLM cache")
+    ab = sub.add_parser("about", help="papers whose main subject matches (terms in title/abstract, | for synonyms)")
+    ab.add_argument("about")
+    ab.add_argument("-m", "--modality")
+    rv = sub.add_parser("reviews", help="compact reviewer weaknesses for some papers")
+    rv.add_argument("paper_ids", nargs="+")
+    rv.add_argument("--all", action="store_true", help="full reviews instead of weaknesses only")
+    rv.add_argument("--max-chars", type=int, default=1200)
     w = sub.add_parser("weaknesses", help="what reviewers criticise for a concept and/or topic")
+    w.add_argument("--about")
     w.add_argument("-c", "--concept")
     w.add_argument("-m", "--modality")
     w.add_argument("-n", "--top", type=int, default=15)
@@ -137,7 +146,7 @@ def main(argv=None) -> int:
         serve(args.db)
         return 0
 
-    if args.cmd in ("vocab", "neighbors", "matrix", "gaps", "bridge", "claims", "weaknesses"):
+    if args.cmd in ("vocab", "neighbors", "matrix", "gaps", "bridge", "claims", "weaknesses", "about", "reviews"):
         from .explore import Explorer, load_claims
         conn = store.connect(args.db)
         if args.cmd == "claims" and args.reload:
@@ -154,11 +163,15 @@ def main(argv=None) -> int:
         elif args.cmd == "bridge":
             out = ex.bridges(args.a, args.b, top=args.top)
         elif args.cmd == "weaknesses":
-            out = ex.reviewer_weaknesses(args.concept, None, args.modality, args.top)
+            out = ex.reviewer_weaknesses(args.concept, None, args.modality, args.top, about=args.about)
+        elif args.cmd == "about":
+            out = ex.find_papers_about(args.about, args.modality)
+        elif args.cmd == "reviews":
+            out = ex.paper_reviews(args.paper_ids, "all" if args.all else "weaknesses", args.max_chars)
         elif args.themes:
-            out = ex.limitation_themes(args.concept, None, args.modality)
+            out = ex.limitation_themes(args.concept, None, args.modality, about=args.about)
         else:
-            out = ex.claims(args.kind, args.concept, None, args.modality, args.query, args.limit)
+            out = ex.claims(args.kind, args.concept, None, args.modality, args.query, args.limit, about=args.about)
         print(json.dumps(out, indent=1, ensure_ascii=False))
         return 0
 
