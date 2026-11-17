@@ -185,7 +185,7 @@ class Explorer:
         def pick(kind, names, top):
             items = self._items(kind, scope, 1)
             if names:
-                return [(n, set().union(*(self._index()[k] for k in self.resolve(n, kind))) & (scope or set(self._titles)))
+                return [(n, set().union(*(self._index()[k] for k in self.resolve(n, kind))) & (set(self._titles) if scope is None else scope))
                         for n in names]
             return sorted(items.items(), key=lambda kv: -len(kv[1]))[:top]
         r_items, c_items = pick(row_kind, rows, top_rows), pick(col_kind, cols, top_cols)
@@ -299,18 +299,20 @@ class Explorer:
                           modality: str | None = None, top: int = 15) -> list[dict]:
         """Recurring limitation themes (keyword buckets) with example papers, for a concept or topic."""
         rows = self.claims("limitation", concept, concept_kind, modality, limit=100000)
-        counts: Counter = Counter()
+        theme_papers: dict[str, set] = defaultdict(set)
         examples: dict[str, list] = defaultdict(list)
         for row in rows:
             text = row["text"].lower()
             for theme, pattern in LIMITATION_THEMES:
                 if re.search(pattern, text):
-                    counts[theme] += 1
+                    theme_papers[theme].add(row["paper_id"])
                     if len(examples[theme]) < 3:
                         examples[theme].append({"paper_id": row["paper_id"], "text": row["text"]})
-        total = len(rows) or 1
-        return [{"theme": t, "papers": n, "share": round(n / total, 3), "examples": examples[t]}
-                for t, n in counts.most_common(top)]
+        # share = fraction of papers with at least one extracted limitation that hit this theme
+        total = len({row["paper_id"] for row in rows}) or 1
+        ranked = sorted(theme_papers.items(), key=lambda kv: (-len(kv[1]), kv[0]))[:top]
+        return [{"theme": t, "papers": len(p), "share": round(len(p) / total, 3), "examples": examples[t]}
+                for t, p in ranked]
 
     def reviewer_weaknesses(self, concept: str | None = None, concept_kind: str | None = None,
                             modality: str | None = None, top: int = 15, examples: int = 3) -> dict:

@@ -43,14 +43,7 @@ def create_server(db_path=store.DEFAULT_DB, root=".") -> FastMCP:
                 def run(*args, **kwargs):
                     with lock:
                         return fn(*args, **kwargs)
-                @server.tool()
-    def reviewer_weaknesses(concept: str | None = None, modality: str | None = None, top: int = 15) -> dict:
-        """What MICCAI 2026 reviewers criticised for papers with a concept and/or in a topic: weakness
-        themes (novelty, baselines, small data, ablation, statistics, ...) with the share of reviewed
-        papers hit and short quotes. Use it to stress-test a project plan before writing it."""
-        return explorer.reviewer_weaknesses(concept, None, modality, top)
-
-    return mcp.tool()(run)
+                return mcp.tool()(run)
             return register
 
     server = _Locked()

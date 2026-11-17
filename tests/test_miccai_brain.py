@@ -158,6 +158,33 @@ class MiccaiBrainTest(unittest.TestCase):
         bridge = ex.bridges("BraTS", "MRI")
         self.assertEqual(len(bridge["together"]), 2)
 
+    def test_limitation_themes_count_distinct_papers(self):
+        from src.miccai_brain.explore import Explorer
+        ex = Explorer(self.brain.conn)
+        conn = self.brain.conn
+        conn.execute("INSERT INTO paper_claims (paper_id, kind, text) VALUES ('0003-Paper1003', 'limitation', 'Single-centre cohort only.')")
+        try:
+            theme = next(t for t in ex.limitation_themes() if t["theme"].startswith("single-centre"))
+            self.assertEqual((theme["papers"], theme["share"]), (1, 1.0))
+        finally:
+            conn.execute("DELETE FROM paper_claims WHERE text = 'Single-centre cohort only.'")
+
+    def test_matrix_with_unknown_modality_is_empty(self):
+        from src.miccai_brain.explore import Explorer
+        grid = Explorer(self.brain.conn).matrix("dataset", "modality", modality="UNKNOWN", rows=["BraTS"], cols=["MRI"])
+        self.assertEqual(grid["counts"], [[0]])
+
+    def test_mcp_server_registers_every_tool_once(self):
+        try:
+            import mcp  # noqa: F401
+        except ImportError:
+            self.skipTest("mcp not installed")
+        import asyncio
+        from src.miccai_brain.mcp_server import create_server
+        names = [t.name for t in asyncio.run(create_server(self.db, self.root).list_tools())]
+        self.assertEqual(len(names), len(set(names)))
+        self.assertIn("reviewer_weaknesses", names)
+
     def test_reviewer_weaknesses_themes(self):
         from src.miccai_brain.explore import Explorer
         out = Explorer(self.brain.conn).reviewer_weaknesses(modality="MRI")
