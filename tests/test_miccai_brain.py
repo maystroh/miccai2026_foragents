@@ -194,6 +194,59 @@ class MiccaiBrainTest(unittest.TestCase):
         self.assertEqual(out["themes"][0]["theme"], "limited novelty")
         self.assertEqual(Explorer(self.brain.conn).reviewer_weaknesses(modality="EHR")["papers_reviewed"], 0)
 
+    def test_about_filter_matches_main_subject_with_synonyms(self):
+        from src.miccai_brain.explore import Explorer
+        ex = Explorer(self.brain.conn)
+        self.assertEqual(ex.papers_about("glioma|brain tumor, modalit"), {"0001-Paper1001", "0002-Paper1002"})
+        self.assertEqual(ex.papers_about("glioma, MIMIC"), set())
+        self.assertEqual([p["paper_id"] for p in ex.find_papers_about("mortality")], ["0003-Paper1003"])
+        self.assertEqual(ex.reviewer_weaknesses(about="glioma")["papers"], ["0001-Paper1001"])
+        self.assertEqual(ex.reviewer_weaknesses(about="mortality")["papers_reviewed"], 0)
+
+    def test_paper_reviews_keeps_weaknesses_only(self):
+        from src.miccai_brain.explore import Explorer
+        out = Explorer(self.brain.conn).paper_reviews(["0001-Paper1001"], max_chars=20)
+        texts = " ".join(r["text"] for r in out[0]["reviews"])
+        self.assertIn("Limited novelty", texts)
+        self.assertNotIn("Clear writing", texts)
+        self.assertTrue(all(len(r["text"]) <= 22 for r in out[0]["reviews"]))
+
+    def test_empty_paper_list_selects_nothing(self):
+        from src.miccai_brain.explore import Explorer
+        ex = Explorer(self.brain.conn, self.root)
+        self.assertEqual(ex.claims("limitation", paper_ids=[]), [])
+        self.assertEqual(ex.limitation_themes(paper_ids=[]), [])
+        self.assertEqual(ex.reviewer_weaknesses(paper_ids=[])["papers_reviewed"], 0)
+        self.assertTrue(ex.claims("limitation"))  # None still means the whole corpus
+
+    def test_weaknesses_keep_subsection_headings(self):
+        from src.miccai_brain.explore import review_weaknesses
+        text = "Strengths: Good.\n\nWeaknesses: Small cohort.\n\nExternal validation: none on a second site."
+        self.assertEqual(review_weaknesses(text), "Small cohort.\n\nExternal validation: none on a second site.")
+        self.assertIsNone(review_weaknesses("Strengths: Good."))
+
+    def test_mcp_results_are_compact_single_json(self):
+        try:
+            import mcp  # noqa: F401
+        except ImportError:
+            self.skipTest("mcp not installed")
+        import asyncio
+        from src.miccai_brain.mcp_server import create_server
+        server = create_server(self.db, self.root)
+        res = asyncio.run(server.call_tool("get_paper", {"paper_id": "0001-Paper1001"}))
+        content = getattr(res, "content", res[0] if isinstance(res, tuple) else res)
+        self.assertEqual(len(content), 1)
+        self.assertFalse(getattr(res, "structured_content", None))  # no second copy of the result
+        self.assertNotIn("\n ", content[0].text)
+        paper = json.loads(content[0].text)
+        self.assertNotIn("body", paper)
+        self.assertNotIn("reviews", paper)
+        self.assertIsInstance(paper["concepts"], dict)
+        res = asyncio.run(server.call_tool("list_topics", {}))
+        content = getattr(res, "content", res[0] if isinstance(res, tuple) else res)
+        self.assertEqual(len(content), 1)  # a list comes back as one JSON array, not one block per item
+        self.assertEqual(json.loads(content[0].text)[0]["modality"], "MRI")
+
     def test_hybrid_search_falls_back_to_keywords_when_embedder_fails(self):
         brain = Brain(self.db)
         brain._embedder = FailingEmbedder(0)

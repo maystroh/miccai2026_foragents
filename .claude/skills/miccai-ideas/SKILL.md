@@ -29,11 +29,15 @@ summary and the decision they need to make, and wait. Do not run ahead to later 
 
 ## Steps
 
+Follow the token budget in the `miccai-brain` skill: summary tools first, at most 3 `get_paper` calls
+per step, reviews through `paper_reviews`.
+
+
 1. **Frame.** Ask the user, in one message: the area (topic, task, anatomy, or open), what they can do
    (data they have, compute, months available), what kind of contribution they want (method, benchmark,
    clinical study, dataset), and what would make an idea not worth it. Write `plan.md`. Stopping rule:
    at most 3 rounds of candidate generation unless the user says otherwise.
-2. **Map the area.** `topic_overview`, `vocabulary` (tasks, methods, datasets), `limitation_themes`,
+2. **Map the area.** Filter by subject with `about=` (see `find_papers_about`). `topic_overview`, `vocabulary` (tasks, methods, datasets), `limitation_themes`,
    `reviewer_weaknesses` for the area. Report what is crowded, what is thin, what authors and reviewers
    complain about. Ask the user what surprised them.
 3. **Generate candidates** from four sources, at least two candidates per source when they exist:
