@@ -129,6 +129,24 @@ class MiccaiBrainTest(unittest.TestCase):
         self.assertTrue(graph["edges"])
 
 
+class ConceptMergeTest(unittest.TestCase):
+    def test_spelling_variants_fold_to_the_most_common_form(self):
+        from src.miccai_brain.extract import fold_key, merge_variants
+        self.assertEqual(fold_key("Multi-modal LLMs"), fold_key("multimodal llm"))
+        self.assertNotEqual(fold_key("class"), fold_key("cla"))
+        mapping = merge_variants({"a": [("f1 score", "metric")], "b": [("f1 score", "metric")],
+                                  "c": [("f1-score", "metric"), ("state-space models", "keyword")],
+                                  "d": [("state space model", "method")]})
+        self.assertEqual(mapping, {"f1-score": "f1 score", "state-space models": "state space model"})
+
+    def test_body_tags_are_split_and_win_over_keywords(self):
+        from src.miccai_brain.corpus import Paper
+        from src.miccai_brain.extract import paper_concepts
+        paper = Paper(paper_id="p", title="t", paper_url="u", body="Abdomen; Brain", keywords=["Brain", "Registration"])
+        self.assertEqual(paper_concepts(paper, {}),
+                         [("abdomen", "body"), ("brain", "body"), ("registration", "keyword")])
+
+
 if __name__ == "__main__":
     unittest.main()
 

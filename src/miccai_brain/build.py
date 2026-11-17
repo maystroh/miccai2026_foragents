@@ -14,7 +14,7 @@ from .chunking import chunk_paper
 from .corpus import load_papers
 from .embed import get_embedder
 from .extract import (TAG_KINDS, load_aliases, load_dataset_patterns, load_stoplist, normalize_concept,
-                      paper_concepts, paper_datasets)
+                      paper_concepts, paper_datasets, merge_variants)
 from .extract_llm import llm_concepts, load_cached
 
 
@@ -57,6 +57,7 @@ def _build_into(conn, cache, root, papers, aliases, patterns, stoplist, embedder
                 min_similarity, t0, log) -> dict:
 
     rows = []  # (paper_id, kind, section, text, title)
+    per_paper: dict[str, list[tuple[str, str]]] = {}
     llm_papers = 0
     for paper in papers:
         conn.execute(
@@ -82,9 +83,7 @@ def _build_into(conn, cache, root, papers, aliases, patterns, stoplist, embedder
                 known.add(canonical.lower())
                 found_datasets.append((canonical, 1))
         # MICCAI tags are kept as published; author keywords and extracted terms skip the stoplist.
-        found_concepts = [(c, k) for c, k in found_concepts if c and (k in TAG_KINDS or c not in stoplist)]
-        conn.executemany("INSERT OR IGNORE INTO paper_concepts VALUES (?, ?, ?)",
-                         [(paper.paper_id, c, k) for c, k in found_concepts])
+        per_paper[paper.paper_id] = [(c, k) for c, k in found_concepts if c and (k in TAG_KINDS or c not in stoplist)]
         conn.executemany("INSERT OR IGNORE INTO paper_datasets VALUES (?, ?, ?)",
                          [(paper.paper_id, d, n) for d, n in found_datasets])
         rows.append((paper.paper_id, "abstract", "Title and abstract", f"{paper.title}\n\n{paper.abstract}", paper.title))
@@ -94,7 +93,14 @@ def _build_into(conn, cache, root, papers, aliases, patterns, stoplist, embedder
             for review in paper.reviews:
                 label = review.role.replace("_", " ") + (f" ({review.rating})" if review.rating else "")
                 rows.append((paper.paper_id, "review", label, review.text, paper.title))
-    log(f"{len(rows)} chunks")
+    # Spelling variants (hyphens, plurals) collapse to the most common form; tags stay as published.
+    variants = merge_variants({pid: [(c, k) for c, k in pairs if k not in TAG_KINDS]
+                               for pid, pairs in per_paper.items()})
+    for pid, pairs in per_paper.items():
+        conn.executemany("INSERT OR IGNORE INTO paper_concepts VALUES (?, ?, ?)",
+                         [(pid, c, k) for c, k in ((c if k in TAG_KINDS else variants.get(c, c), k) for c, k in pairs)
+                          if k in TAG_KINDS or c not in stoplist])
+    log(f"{len(rows)} chunks, {len(variants)} concept spellings merged")
 
     # Embed, reusing cached vectors for unchanged text.
     hashes = [_hash(embedder.spec, r[3]) for r in rows]

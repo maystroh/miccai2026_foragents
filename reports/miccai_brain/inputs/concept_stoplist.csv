@@ -27,3 +27,29 @@ backbone,generic building block
 neural network,generic term
 deep neural network,generic term
 deep learning,generic term
+brain,organ covered by a MICCAI body tag
+lung,organ covered by a MICCAI body tag
+chest,organ covered by a MICCAI body tag
+thorax,organ covered by a MICCAI body tag
+heart,organ covered by a MICCAI body tag
+cardiac,organ covered by a MICCAI body tag
+breast,organ covered by a MICCAI body tag
+eye,organ covered by a MICCAI body tag
+retina,organ covered by a MICCAI body tag
+skin,organ covered by a MICCAI body tag
+spine,organ covered by a MICCAI body tag
+abdomen,organ covered by a MICCAI body tag
+abdominal organs,organ covered by a MICCAI body tag
+abdominal cavity,organ covered by a MICCAI body tag
+pelvis,organ covered by a MICCAI body tag
+head and neck,organ covered by a MICCAI body tag
+head & neck,organ covered by a MICCAI body tag
+whole body,organ covered by a MICCAI body tag
+whole-body,organ covered by a MICCAI body tag
+multi-organ,organ covered by a MICCAI body tag
+multiple organs,organ covered by a MICCAI body tag
+vasculature,organ covered by a MICCAI body tag
+blood vessels,organ covered by a MICCAI body tag
+vessels,organ covered by a MICCAI body tag
+fetus,organ covered by a MICCAI body tag
+musculoskeletal system,organ covered by a MICCAI body tag
