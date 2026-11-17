@@ -19,6 +19,7 @@ otherwise run the same queries with the CLI from the repo root, which prints JSO
 | White-space pairs | `find_gaps` | `gaps <kind_a> <kind_b> [-m MRI] [--focus text]` |
 | Prior work for combining A and B | `bridge_papers` | `bridge "<A>" "<B>"` |
 | Authors' own limitations / contributions | `paper_claims`, `limitation_themes` | `claims [-c concept] [-m MRI] [-q words] [--themes]` |
+| What reviewers criticised for a topic or concept | `reviewer_weaknesses` | `weaknesses [-c concept] [-m MRI]` |
 | Topics, topic overview, papers with a tag, similar papers | `list_topics`, `topic_overview`, `papers_with`, `related_papers` | `topic`, `concept`, `related` |
 
 Kinds: `task`, `method`, `anatomy`, `metric`, `keyword`, `dataset`, `modality` (topic folder such as
@@ -35,7 +36,9 @@ search falls back to keywords and returns a warning; every graph tool works with
 3. Answer with citations: `[paper_id] Title`, and say how many papers support each statement.
    Distinguish what a paper reports from your synthesis. Say when the brain has nothing on it.
 
-## Finding ideas (autonomous mode)
+## Finding ideas
+
+For a full, step-by-step hunt with a saved trail, use the `miccai-ideas` skill. The short version:
 
 Work in this order and keep notes of every query you run:
 

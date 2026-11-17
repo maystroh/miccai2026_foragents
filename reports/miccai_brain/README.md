@@ -227,9 +227,15 @@ Then ask, for example: "Using the MICCAI brain, what do MRI papers use for missi
 | `find_gaps` | pairs that are each common, rarely combined, and semantically close |
 | `bridge_papers` | papers combining A and B, and the closest papers that have only one side |
 | `paper_claims`, `limitation_themes` | the authors' own limitations, grouped into recurring themes |
+| `reviewer_weaknesses` | what reviewers criticised for a topic or concept, with quotes |
+
+For a full idea hunt, the `miccai-ideas` skill walks through framing, mapping, candidates, checks and a
+shortlist one step at a time, saving the trail in `runs/<date>-<slug>/`. `/advisor <idea file>` sends an
+idea to the `miccai-advisor` agent (Opus, high effort), an adversarial reviewer that critiques it with
+real MICCAI 2026 reviewer weaknesses.
 
 The same analytics are on the CLI and print JSON: `vocab`, `neighbors`, `matrix`, `gaps`, `bridge`,
-`claims` (e.g. `python -m src.miccai_brain gaps method modality --min-papers 6`). None of them calls
+`claims`, `weaknesses` (e.g. `python -m src.miccai_brain gaps method modality --min-papers 6`). None of them calls
 a paid model or needs the GPU server. Contributions and limitations come from the cached Haiku
 extraction; a brain built before this change loads them on first use (or run `claims --reload`).
 

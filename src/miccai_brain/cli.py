@@ -83,6 +83,10 @@ def main(argv=None) -> int:
     cl.add_argument("-n", "--limit", type=int, default=40)
     cl.add_argument("--themes", action="store_true", help="group limitations into recurring themes")
     cl.add_argument("--reload", action="store_true", help="refill the claims table from the LLM cache")
+    w = sub.add_parser("weaknesses", help="what reviewers criticise for a concept and/or topic")
+    w.add_argument("-c", "--concept")
+    w.add_argument("-m", "--modality")
+    w.add_argument("-n", "--top", type=int, default=15)
     x = sub.add_parser("extract", help="LLM extraction of tasks/methods/datasets via OpenRouter (cached; run before build)")
     x.add_argument("--root", default=".")
     x.add_argument("--model", help="OpenRouter model id (default: $MICCAI_BRAIN_LLM_MODEL)")
@@ -127,7 +131,7 @@ def main(argv=None) -> int:
         serve(args.db)
         return 0
 
-    if args.cmd in ("vocab", "neighbors", "matrix", "gaps", "bridge", "claims"):
+    if args.cmd in ("vocab", "neighbors", "matrix", "gaps", "bridge", "claims", "weaknesses"):
         from .explore import Explorer, load_claims
         conn = store.connect(args.db)
         if args.cmd == "claims" and args.reload:
@@ -143,6 +147,8 @@ def main(argv=None) -> int:
             out = ex.gaps(args.kind_a, args.kind_b, args.modality, args.min_papers, args.max_together, args.top, args.focus)
         elif args.cmd == "bridge":
             out = ex.bridges(args.a, args.b, top=args.top)
+        elif args.cmd == "weaknesses":
+            out = ex.reviewer_weaknesses(args.concept, None, args.modality, args.top)
         elif args.themes:
             out = ex.limitation_themes(args.concept, None, args.modality)
         else:

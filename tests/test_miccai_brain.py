@@ -158,6 +158,13 @@ class MiccaiBrainTest(unittest.TestCase):
         bridge = ex.bridges("BraTS", "MRI")
         self.assertEqual(len(bridge["together"]), 2)
 
+    def test_reviewer_weaknesses_themes(self):
+        from src.miccai_brain.explore import Explorer
+        out = Explorer(self.brain.conn).reviewer_weaknesses(modality="MRI")
+        self.assertEqual(out["papers_reviewed"], 1)
+        self.assertEqual(out["themes"][0]["theme"], "limited novelty")
+        self.assertEqual(Explorer(self.brain.conn).reviewer_weaknesses(modality="EHR")["papers_reviewed"], 0)
+
     def test_hybrid_search_falls_back_to_keywords_when_embedder_fails(self):
         brain = Brain(self.db)
         brain._embedder = FailingEmbedder(0)

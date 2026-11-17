@@ -312,6 +312,58 @@ class Explorer:
         return [{"theme": t, "papers": n, "share": round(n / total, 3), "examples": examples[t]}
                 for t, n in counts.most_common(top)]
 
+    def reviewer_weaknesses(self, concept: str | None = None, concept_kind: str | None = None,
+                            modality: str | None = None, top: int = 15, examples: int = 3) -> dict:
+        """What reviewers criticise for papers with a concept and/or in a topic: weakness themes with the
+        share of reviewed papers hit and short quotes. Uses the "Weaknesses:" part of each review."""
+        pids = self.papers_for(concept, concept_kind) if concept else None
+        scope = self._scope(modality)
+        if scope is not None:
+            pids = scope if pids is None else pids & scope
+        counts: Counter = Counter()
+        quotes: dict[str, list] = defaultdict(list)
+        reviewed = set()
+        rows = self.conn.execute("SELECT paper_id, text FROM chunks WHERE kind = 'review' AND section LIKE 'reviewer%'")
+        for pid, text in rows:
+            if pids is not None and pid not in pids:
+                continue
+            m = re.search(r"Weaknesses:\s*(.*?)(?:\n\s*\n[A-Z][\w ]{2,40}:|\Z)", text, re.S)
+            if not m:
+                continue
+            reviewed.add(pid)
+            weak = m.group(1)
+            hit = set()
+            for sentence in re.split(r"(?<=[.!?])\s+", weak):
+                low = sentence.lower()
+                for theme, pattern in REVIEW_THEMES:
+                    if theme not in hit and re.search(pattern, low):
+                        hit.add(theme)
+                        if len(quotes[theme]) < examples:
+                            quotes[theme].append({"paper_id": pid, "text": sentence.strip()[:300]})
+            for theme in hit:
+                counts[(theme, pid)] += 1
+        per_theme = Counter(theme for theme, _ in counts)
+        n = len(reviewed) or 1
+        return {"papers_reviewed": len(reviewed),
+                "themes": [{"theme": t, "papers": k, "share": round(k / n, 3), "examples": quotes[t]}
+                           for t, k in per_theme.most_common(top)]}
+
+
+REVIEW_THEMES = [
+    ("limited novelty", r"novelty|incremental|combination of existing|not new|limited contribution"),
+    ("missing or weak baselines", r"baselines?\b|(lack|missing|limited|no|insufficient|more) (\w+ ){0,2}comparisons?|compar\w* (with|against|to) (more|other|recent|stronger|state)|state-of-the-art|\bsota\b"),
+    ("small or single-centre data", r"small (data|sample|cohort)|single[- ](cent|site|institution|dataset)|external (validation|test)|generaliz"),
+    ("ablation missing", r"ablation"),
+    ("statistics / significance", r"statistic|significan|confidence interval|variance|standard deviation|p-value|multiple runs|seeds?\b"),
+    ("clarity / missing details", r"unclear|not (clearly )?(explained|described|defined|specified)|missing details|hard to follow|confusing"),
+    ("reproducibility / code", r"reproduc|code (is )?not|release|open[- ]source|implementation details"),
+    ("clinical relevance / utility", r"clinical (relevance|utility|impact|value|practice|setting)|clinically"),
+    ("computational cost", r"computational|inference time|runtime|memory|flops|parameters"),
+    ("evaluation metrics", r"metric|dice only|hd95|auc only|evaluation protocol"),
+    ("hyperparameters / sensitivity", r"hyperparameter|sensitivity analysis|tuning"),
+    ("dataset / label issues", r"label|annotation|ground truth|data split|leak"),
+]
+
 
 LIMITATION_THEMES = [
     ("single-centre / no external validation", r"single[- ](cent|site|institution|hospital|scanner|vendor|cohort|dataset|tracer|clinical)|"
