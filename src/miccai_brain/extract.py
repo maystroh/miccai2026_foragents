@@ -80,7 +80,7 @@ def majority_kinds(per_paper: dict[str, list[tuple[str, str]]]) -> dict[str, str
     """One kind per concept: the kind most papers use, so a rare metric label cannot hide a method."""
     counts: dict[str, dict[str, int]] = {}
     for pairs in per_paper.values():
-        for concept, kind in pairs:
+        for concept, kind in set(pairs):  # one vote per paper, even when several spellings merged
             counts.setdefault(concept, {}).setdefault(kind, 0)
             counts[concept][kind] += 1
     rank = {k: i for i, k in enumerate(KIND_ORDER)}

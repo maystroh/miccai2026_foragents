@@ -98,7 +98,6 @@ chain-of-thought prompting,chain-of-thought
 gaussian splatting,3d gaussian splatting
 3dgs,3d gaussian splatting
 nerf,neural radiance field
-ssl,self-supervised learning
 dti,diffusion tensor imaging
 electroencephalography,eeg
 electroencephalography (eeg),eeg

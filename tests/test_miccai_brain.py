@@ -153,6 +153,9 @@ class ConceptMergeTest(unittest.TestCase):
         per_paper["t"] = [("probe", "metric")]
         per_paper["u"] = [("probe", "method")]
         self.assertEqual(majority_kinds(per_paper), {"grad-cam": "method", "probe": "method"})
+        # Merged spellings in one paper count once.
+        merged = {"a": [("grad-cam", "method")], "b": [("grad-cam", "method")], "c": [("grad-cam", "metric")] * 3}
+        self.assertEqual(majority_kinds(merged), {"grad-cam": "method"})
 
     def test_body_tags_are_split_and_win_over_keywords(self):
         from src.miccai_brain.corpus import Paper
