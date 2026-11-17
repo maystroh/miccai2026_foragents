@@ -28,10 +28,10 @@ CREATE TABLE IF NOT EXISTS paper_edges (src TEXT, dst TEXT, weight REAL, PRIMARY
 """
 
 
-def connect(db_path: Path | str = DEFAULT_DB) -> sqlite3.Connection:
+def connect(db_path: Path | str = DEFAULT_DB, check_same_thread: bool = True) -> sqlite3.Connection:
     db_path = Path(db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path, check_same_thread=check_same_thread)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
     return conn

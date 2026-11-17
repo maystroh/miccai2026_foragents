@@ -46,6 +46,49 @@ def main(argv=None) -> int:
     d = sub.add_parser("dashboard", help="rewrite the dashboard HTML from the existing database")
     d.add_argument("--html", default=str(DEFAULT_HTML))
     sub.add_parser("serve", help="run the MCP server over stdio")
+    gd = sub.add_parser("guide", help="every brain tool with what it answers and an example")
+    gd.add_argument("--json", action="store_true")
+    # Graph analytics (no embedder, no paid model). All print JSON so agents can parse them.
+    v = sub.add_parser("vocab", help="most frequent names of one kind (task, method, anatomy, dataset, modality, ...)")
+    v.add_argument("kind")
+    v.add_argument("-m", "--modality")
+    v.add_argument("-n", "--top", type=int, default=50)
+    nb = sub.add_parser("neighbors", help="what co-occurs with a concept/dataset/modality, ranked by lift")
+    nb.add_argument("name")
+    nb.add_argument("-k", "--kind")
+    nb.add_argument("-o", "--other-kind")
+    nb.add_argument("-m", "--modality")
+    nb.add_argument("-n", "--top", type=int, default=20)
+    mx = sub.add_parser("matrix", help="coverage counts between two kinds (e.g. method anatomy)")
+    mx.add_argument("row_kind")
+    mx.add_argument("col_kind")
+    mx.add_argument("-m", "--modality")
+    mx.add_argument("--rows", nargs="*")
+    mx.add_argument("--cols", nargs="*")
+    g = sub.add_parser("gaps", help="white-space pairs: both common, rarely together, semantically close")
+    g.add_argument("kind_a")
+    g.add_argument("kind_b")
+    g.add_argument("-m", "--modality")
+    g.add_argument("--min-papers", type=int, default=5)
+    g.add_argument("--max-together", type=int, default=1)
+    g.add_argument("--focus")
+    g.add_argument("-n", "--top", type=int, default=25)
+    br = sub.add_parser("bridge", help="papers combining A and B, and the closest one-sided papers")
+    br.add_argument("a")
+    br.add_argument("b")
+    br.add_argument("-n", "--top", type=int, default=10)
+    cl = sub.add_parser("claims", help="LLM-extracted limitations or contributions")
+    cl.add_argument("--kind", choices=["limitation", "contribution"], default="limitation")
+    cl.add_argument("-c", "--concept")
+    cl.add_argument("-m", "--modality")
+    cl.add_argument("-q", "--query")
+    cl.add_argument("-n", "--limit", type=int, default=40)
+    cl.add_argument("--themes", action="store_true", help="group limitations into recurring themes")
+    cl.add_argument("--reload", action="store_true", help="refill the claims table from the LLM cache")
+    w = sub.add_parser("weaknesses", help="what reviewers criticise for a concept and/or topic")
+    w.add_argument("-c", "--concept")
+    w.add_argument("-m", "--modality")
+    w.add_argument("-n", "--top", type=int, default=15)
     x = sub.add_parser("extract", help="LLM extraction of tasks/methods/datasets via OpenRouter (cached; run before build)")
     x.add_argument("--root", default=".")
     x.add_argument("--model", help="OpenRouter model id (default: $MICCAI_BRAIN_LLM_MODEL)")
@@ -85,15 +128,46 @@ def main(argv=None) -> int:
                             args.workers, args.force, args.limit, args.max_cost)
         print(json.dumps(usage))
         return 1 if usage["failed"] else 0
+    if args.cmd == "guide":
+        from .guide import guide, guide_markdown
+        print(json.dumps(guide(), indent=1) if args.json else guide_markdown())
+        return 0
     if args.cmd == "serve":
         from .mcp_server import serve
         serve(args.db)
+        return 0
+
+    if args.cmd in ("vocab", "neighbors", "matrix", "gaps", "bridge", "claims", "weaknesses"):
+        from .explore import Explorer, load_claims
+        conn = store.connect(args.db)
+        if args.cmd == "claims" and args.reload:
+            print(f"{load_claims(conn, '.')} claims loaded", flush=True)
+        ex = Explorer(conn, ".")
+        if args.cmd == "vocab":
+            out = ex.vocabulary(args.kind, args.modality, args.top)
+        elif args.cmd == "neighbors":
+            out = ex.neighbors(args.name, args.kind, args.other_kind, args.modality, args.top)
+        elif args.cmd == "matrix":
+            out = ex.matrix(args.row_kind, args.col_kind, args.modality, rows=args.rows, cols=args.cols)
+        elif args.cmd == "gaps":
+            out = ex.gaps(args.kind_a, args.kind_b, args.modality, args.min_papers, args.max_together, args.top, args.focus)
+        elif args.cmd == "bridge":
+            out = ex.bridges(args.a, args.b, top=args.top)
+        elif args.cmd == "weaknesses":
+            out = ex.reviewer_weaknesses(args.concept, None, args.modality, args.top)
+        elif args.themes:
+            out = ex.limitation_themes(args.concept, None, args.modality)
+        else:
+            out = ex.claims(args.kind, args.concept, None, args.modality, args.query, args.limit)
+        print(json.dumps(out, indent=1, ensure_ascii=False))
         return 0
 
     from .search import Brain
     brain = Brain(args.db)
     if args.cmd == "search":
         hits = brain.search(args.query, args.modality, args.limit, args.reviews, args.mode)
+        if brain.last_warning:
+            print(f"warning: {brain.last_warning}", file=__import__("sys").stderr)
         if args.json:
             print(json.dumps([asdict(h) for h in hits], indent=2, ensure_ascii=False))
         for i, h in enumerate(hits if not args.json else [], 1):
