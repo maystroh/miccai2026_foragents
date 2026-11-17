@@ -68,7 +68,9 @@ class MiccaiBrainTest(unittest.TestCase):
         llm.mkdir(parents=True)
         (llm / "0003-Paper1003.json").write_text(json.dumps({"model": "m", "prompt_version": "v1", "result": {
             "tasks": ["Mortality Prediction"], "methods": ["transformer"], "datasets": [{"name": "MIMIC-IV", "public": True},
-            {"name": "eICU", "public": True}, {"name": "in-house cohort", "public": False}]}}), encoding="utf-8")
+            {"name": "eICU", "public": True}, {"name": "in-house cohort", "public": False}],
+            "contributions": ["A transformer for ICU mortality."],
+            "limitations": ["Single-centre retrospective cohort without external validation."]}}), encoding="utf-8")
         cls.db = cls.root / "brain.sqlite"
         build(cls.root, cls.db, "hash:128", log=lambda *_: None)
         cls.brain = Brain(cls.db)
@@ -127,6 +129,42 @@ class MiccaiBrainTest(unittest.TestCase):
         self.assertIn("missing modality", names)  # shared by two papers
         self.assertEqual({d["n"] for d in graph["datasets"]}, {"BraTS", "MIMIC-IV", "eICU"})
         self.assertTrue(graph["edges"])
+
+
+    def test_claims_stored_and_filtered(self):
+        from src.miccai_brain.explore import Explorer
+        ex = Explorer(self.brain.conn)
+        lims = ex.claims("limitation", modality="EHR")
+        self.assertEqual([c["paper_id"] for c in lims], ["0003-Paper1003"])
+        self.assertEqual(ex.claims("limitation", modality="MRI"), [])
+        self.assertEqual(ex.claims("limitation", query="external validation")[0]["paper_id"], "0003-Paper1003")
+        self.assertEqual(ex.claims_of("0003-Paper1003")["contributions"], ["A transformer for ICU mortality."])
+        themes = {t["theme"] for t in ex.limitation_themes()}
+        self.assertIn("single-centre / no external validation", themes)
+
+    def test_neighbors_matrix_and_gaps(self):
+        from src.miccai_brain.explore import Explorer
+        ex = Explorer(self.brain.conn)
+        near = ex.neighbors("BraTS", "dataset", other_kind="modality", top=5)
+        self.assertEqual(near["papers"], 2)
+        self.assertEqual(near["neighbors"][0]["name"], "MRI")
+        grid = ex.matrix("dataset", "modality")
+        cols = [c["name"] for c in grid["cols"]]
+        rows = [r["name"] for r in grid["rows"]]
+        self.assertEqual(grid["counts"][rows.index("BraTS")][cols.index("EHR")], 0)
+        gaps = ex.gaps("dataset", "modality", min_papers=1, max_together=0)
+        self.assertIn(("BraTS", "EHR"), {(g["a"], g["b"]) for g in gaps})
+        self.assertNotIn(("BraTS", "MRI"), {(g["a"], g["b"]) for g in gaps})
+        bridge = ex.bridges("BraTS", "MRI")
+        self.assertEqual(len(bridge["together"]), 2)
+
+    def test_hybrid_search_falls_back_to_keywords_when_embedder_fails(self):
+        brain = Brain(self.db)
+        brain._embedder = FailingEmbedder(0)
+        hits = brain.search("glioma")
+        self.assertTrue(hits)
+        self.assertIn("keyword results only", brain.last_warning)
+        brain.conn.close()
 
 
 class ConceptMergeTest(unittest.TestCase):

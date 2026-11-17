@@ -168,6 +168,8 @@ def _build_into(conn, cache, root, papers, aliases, patterns, stoplist, embedder
         "built_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "seconds": round(time.time() - t0, 1),
     }
+    from .explore import load_claims
+    stats["claims"] = load_claims(conn, root)
     store.set_meta(conn, "embedder", embedder.spec)
     store.set_meta(conn, "stats", stats)
     conn.commit()

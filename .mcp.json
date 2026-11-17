@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "miccai-brain": {
+      "command": "python",
+      "args": ["-m", "src.miccai_brain", "serve"]
+    }
+  }
+}

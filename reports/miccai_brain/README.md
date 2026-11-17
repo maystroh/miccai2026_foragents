@@ -202,14 +202,36 @@ sentence-transformers model (`sentence-transformers:BAAI/bge-small-en-v1.5`). Re
 `build` reuses cached embeddings for unchanged text. Qwen3-Embedding models get their query
 instruction automatically; override it with `MICCAI_BRAIN_QUERY_PREFIX`.
 
-## Claude / MCP
+## Using the brain from an agent
+
+Open Claude Code in the repo root. `.mcp.json` registers the `miccai-brain` MCP server and
+`.claude/skills/miccai-brain/` teaches the agent how to answer questions with citations and how to
+hunt for research ideas. If `python` on your PATH is not the project venv, register it yourself:
 
 ```bash
-claude mcp add miccai-brain -- python -m src.miccai_brain serve
+claude mcp add miccai-brain -s local -- .venv\Scripts\python.exe -m src.miccai_brain serve   # Windows
+claude mcp add miccai-brain -s local -- .venv/bin/python -m src.miccai_brain serve             # Linux/macOS
 ```
 
-Tools: `search_papers`, `get_paper`, `related_papers`, `list_topics`, `topic_overview`,
-`papers_with`.
+Then ask, for example: "Using the MICCAI brain, what do MRI papers use for missing modalities?" or
+"Find three under-explored ideas in ultrasound and write a project plan for the best one."
+
+| Tool | What it gives the agent |
+|---|---|
+| `search_papers` | hybrid search; falls back to keywords with a warning if the GPU server is down |
+| `get_paper` | metadata, concepts, datasets, LLM contributions and limitations, reviews |
+| `related_papers`, `list_topics`, `topic_overview`, `papers_with` | navigation |
+| `vocabulary` | most common names of a kind (task, method, anatomy, dataset, modality, ...) |
+| `neighbors` | what co-occurs with a concept, dataset or topic, ranked by lift |
+| `coverage_matrix` | paper counts for every pair of two kinds (e.g. method x modality) |
+| `find_gaps` | pairs that are each common, rarely combined, and semantically close |
+| `bridge_papers` | papers combining A and B, and the closest papers that have only one side |
+| `paper_claims`, `limitation_themes` | the authors' own limitations, grouped into recurring themes |
+
+The same analytics are on the CLI and print JSON: `vocab`, `neighbors`, `matrix`, `gaps`, `bridge`,
+`claims` (e.g. `python -m src.miccai_brain gaps method modality --min-papers 6`). None of them calls
+a paid model or needs the GPU server. Contributions and limitations come from the cached Haiku
+extraction; a brain built before this change loads them on first use (or run `claims --reload`).
 
 ## Dashboard
 

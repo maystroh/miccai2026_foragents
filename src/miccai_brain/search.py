@@ -28,8 +28,8 @@ class Hit:
 
 
 class Brain:
-    def __init__(self, db_path=store.DEFAULT_DB, embedder_spec: str | None = None):
-        self.conn = store.connect(db_path)
+    def __init__(self, db_path=store.DEFAULT_DB, embedder_spec: str | None = None, check_same_thread: bool = True):
+        self.conn = store.connect(db_path, check_same_thread)
         self.conn.row_factory = sqlite3.Row
         # Queries can use a different (compatible) embedder than the build, e.g. the same Qwen3
         # model run locally with sentence-transformers instead of the GPU server.
@@ -37,6 +37,7 @@ class Brain:
                               or store.get_meta(self.conn, "embedder"))
         self._embedder = None
         self._matrix = None
+        self.last_warning: str | None = None
 
     @property
     def embedder(self):
@@ -95,8 +96,14 @@ class Brain:
         lists = {}
         if mode in ("hybrid", "keyword"):
             lists["bm25"] = self._bm25(query, kinds, modality)
-        if mode in ("hybrid", "vector"):
+        self.last_warning = None
+        if mode == "vector":
             lists["vector"] = self._vector(query, kinds, allowed)
+        elif mode == "hybrid":
+            try:
+                lists["vector"] = self._vector(query, kinds, allowed)
+            except Exception as exc:  # e.g. the GPU server is unreachable: keep the keyword half
+                self.last_warning = f"semantic half skipped ({type(exc).__name__}: {exc}); keyword results only"
         scores: dict[str, float] = {}
         best_chunk: dict[str, tuple[float, int]] = {}
         sources: dict[str, dict] = {}
