@@ -354,7 +354,8 @@ class Explorer:
             for theme, pattern in LIMITATION_THEMES:
                 if re.search(pattern, text):
                     theme_papers[theme].add(row["paper_id"])
-                    if len(examples[theme]) < 3:
+                    seen = {e["paper_id"] for e in examples[theme]}
+                    if len(examples[theme]) < 2 and row["paper_id"] not in seen:  # two papers, not two lines of one
                         examples[theme].append({"paper_id": row["paper_id"], "text": row["text"][:200]})
         # share = fraction of papers with at least one extracted limitation that hit this theme
         total = len({row["paper_id"] for row in rows}) or 1
