@@ -6,7 +6,7 @@ A searchable map of all 1,161 MICCAI 2026 papers and their reviews, inspired by
 concepts and datasets per modality. Code: `src/miccai_brain/`.
 
 Current build: 1,161 papers, 33,341 text chunks, 1,730 concepts, 1,335 datasets and
-6,871 similar-paper links. Embeddings come from Qwen3-Embedding-0.6B; concepts were
+6,829 similar-paper links. Embeddings come from Qwen3-Embedding-4B; concepts were
 extracted with Claude Haiku 5.5 (total cost $1.49).
 
 ## How the brain is built
@@ -16,7 +16,7 @@ flowchart TD
     A["Papers<br/>Published_papers/&lt;modality&gt;/&lt;paper&gt;/<br/>paper.md + metadata.json"] --> C
     B["Reviews<br/>Published_reviews/&lt;modality&gt;/reviews.csv"] --> C
     C["1. Cut into chunks<br/>title+abstract, body sections, each review"] --> D
-    D["2. Embed every chunk<br/>Qwen3-Embedding-0.6B on the GPU server<br/>one 1,024-number vector per chunk"] --> E
+    D["2. Embed every chunk<br/>Qwen3-Embedding-4B on the GPU server<br/>one 2,560-number vector per chunk"] --> E
     D --> F
     E["3. Paper vector<br/>0.6 x abstract + 0.4 x mean of body chunks"] --> G
     G["4. Similar-paper links<br/>cosine between paper vectors<br/>8 nearest per paper"]
@@ -53,8 +53,9 @@ A paper is too long to compare as one block, so it is cut into chunks:
 
 ### 2. Embeddings (what "semantic" means here)
 
-Each chunk is turned into a list of 1,024 numbers (a *vector*) by
-**Qwen3-Embedding-0.6B**, running on the 5090 of the GPU server. Texts with a similar
+Each chunk is turned into a list of 2,560 numbers (a *vector*) by
+**Qwen3-Embedding-4B**, running on the 5090 of the GPU server (about 31 minutes for all
+33,341 chunks). Texts with a similar
 meaning get vectors that point in a similar direction, even when they use different words
 ("incomplete modalities" and "missing sequences"). Vectors are cached by the hash of their
 text, so a rebuild only embeds what changed.
@@ -68,8 +69,8 @@ the paper is about; the body adds method and dataset detail.
 ### 4. Similarity score (the links between papers)
 
 The **similarity** between two papers is the cosine of the angle between their paper
-vectors: the closer to 1, the closer the topic. For example, the closest papers to
-`0002-Paper5533` score between 0.63 and 0.66. Each paper is linked to its **8 most similar papers**. The dashboard
+vectors: the closer to 1, the closer the topic. Across the 6,829 links in this build the
+score runs from 0.49 to 0.87, with a median of 0.68. Each paper is linked to its **8 most similar papers**. The dashboard
 slider (default 0.60) hides weaker links.
 
 ### 5. Concepts and datasets
@@ -161,10 +162,10 @@ Settings can live in the `.env` of the miccai2026 folder (the CLI reads it).
 ```bash
 # GPU server over SSH running server_embed.py (JSON lines on stdin/stdout); {remote} marks
 # where the remote command goes
-MICCAI_BRAIN_EMBEDDER=ssh:Qwen/Qwen3-Embedding-0.6B
+MICCAI_BRAIN_EMBEDDER=ssh:Qwen/Qwen3-Embedding-4B
 MICCAI_BRAIN_SSH=wsl.exe -e bash -lc "ssh -o BatchMode=yes -p <port> <user>@<host> '{remote}'"
 # optional: embed search queries locally with the same model instead of over SSH
-MICCAI_BRAIN_QUERY_EMBEDDER=sentence-transformers:Qwen/Qwen3-Embedding-0.6B
+MICCAI_BRAIN_QUERY_EMBEDDER=sentence-transformers:Qwen/Qwen3-Embedding-4B
 OPENROUTER_API_KEY=...
 ```
 
