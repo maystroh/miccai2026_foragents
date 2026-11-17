@@ -53,6 +53,8 @@ def make_corpus(root: Path):
     inputs = root / "reports" / "miccai_brain" / "inputs"
     inputs.mkdir(parents=True)
     (inputs / "datasets.csv").write_text("dataset,pattern\nBraTS,\\bBraTS\\b\nMIMIC-IV,\\bMIMIC-IV\\b\n", encoding="utf-8")
+    (inputs / "concept_stoplist.csv").write_text("concept,reason\ntransformer,generic\nsegmentation,generic\n",
+                                                  encoding="utf-8")
     (inputs / "concept_aliases.csv").write_text("alias,concept\nmissing modalities,missing modality\n", encoding="utf-8")
 
 
@@ -109,8 +111,15 @@ class MiccaiBrainTest(unittest.TestCase):
     def test_cached_llm_extraction_merges_concepts_and_datasets(self):
         paper = self.brain.paper("0003-Paper1003")
         kinds = {(c["concept"], c["kind"]) for c in paper["concepts"]}
-        self.assertIn(("transformer", "method"), kinds)
+        self.assertIn("mortality prediction", {c for c, _ in kinds})
         self.assertEqual(sorted(d["dataset"] for d in paper["datasets"]), ["MIMIC-IV", "eICU"])
+
+    def test_stoplist_drops_generic_terms_but_keeps_miccai_tags(self):
+        concepts = {(c["concept"], c["kind"]) for c in self.brain.paper("0003-Paper1003")["concepts"]}
+        self.assertNotIn(("transformer", "method"), concepts)
+        self.assertIn(("segmentation", "application"), concepts)  # MICCAI tag kept
+        keywords = {c["concept"] for c in self.brain.paper("0001-Paper1001")["concepts"] if c["kind"] == "keyword"}
+        self.assertNotIn("segmentation", keywords)
 
     def test_graph_export_links_shared_concepts(self):
         graph = export_graph(self.brain.conn)

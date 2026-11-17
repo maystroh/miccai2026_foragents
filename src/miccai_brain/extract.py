@@ -32,6 +32,18 @@ def load_aliases(root: Path) -> dict[str, str]:
         return {r["alias"].strip().lower(): r["concept"].strip().lower() for r in csv.DictReader(handle)}
 
 
+TAG_KINDS = {"body", "application", "ml"}
+
+
+def load_stoplist(root: Path) -> set[str]:
+    """Generic building blocks (u-net, transformer, ...) that would link almost every paper."""
+    path = root / INPUTS / "concept_stoplist.csv"
+    if not path.exists():
+        return set()
+    with path.open(encoding="utf-8") as handle:
+        return {r["concept"].strip().lower() for r in csv.DictReader(handle) if r.get("concept")}
+
+
 def load_dataset_patterns(root: Path) -> list[tuple[str, re.Pattern]]:
     path = root / INPUTS / "datasets.csv"
     if not path.exists():

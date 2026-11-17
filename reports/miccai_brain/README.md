@@ -84,6 +84,9 @@ A **concept** is a short lowercase term that papers share. It comes from three p
 | Claude Haiku 5.5 | task "brain tumor segmentation", method "diffusion model", anatomy "heart", metric "dice score" | Extracted task, method, anatomy, metric |
 
 Synonyms are merged with `inputs/concept_aliases.csv` (for example "cnns" becomes "cnn").
+Generic building blocks that almost every paper uses (u-net, nnu-net, transformer, vit,
+cross-attention, cnn, ...) are dropped with `inputs/concept_stoplist.csv`, because they would
+link nearly everything. MICCAI tags are kept as published. Add a row to drop another term.
 Metrics and MICCAI tags are hidden by default in the dashboard because almost every paper has
 them; tick "MICCAI tags and metrics" to show them.
 

@@ -13,7 +13,8 @@ from . import store
 from .chunking import chunk_paper
 from .corpus import load_papers
 from .embed import get_embedder
-from .extract import load_aliases, load_dataset_patterns, normalize_concept, paper_concepts, paper_datasets
+from .extract import (TAG_KINDS, load_aliases, load_dataset_patterns, load_stoplist, normalize_concept,
+                      paper_concepts, paper_datasets)
 from .extract_llm import llm_concepts, load_cached
 
 
@@ -28,6 +29,7 @@ def build(root: Path, db_path: Path, embedder_spec: str | None = None, modalitie
     papers = load_papers(root, modalities)
     log(f"loaded {len(papers)} papers")
     aliases, patterns = load_aliases(root), load_dataset_patterns(root)
+    stoplist = load_stoplist(root)
     embedder = get_embedder(embedder_spec)
     db_path = Path(db_path)
     cache = store.connect_cache(db_path)
@@ -36,7 +38,7 @@ def build(root: Path, db_path: Path, embedder_spec: str | None = None, modalitie
     tmp_path.unlink(missing_ok=True)
     conn = store.connect(tmp_path)
     try:
-        stats = _build_into(conn, cache, root, papers, aliases, patterns, embedder,
+        stats = _build_into(conn, cache, root, papers, aliases, patterns, stoplist, embedder,
                             with_reviews, neighbors, min_similarity, t0, log)
     except BaseException:
         conn.close()  # Windows cannot delete a file that is still open
@@ -51,7 +53,7 @@ def build(root: Path, db_path: Path, embedder_spec: str | None = None, modalitie
     return stats
 
 
-def _build_into(conn, cache, root, papers, aliases, patterns, embedder, with_reviews, neighbors,
+def _build_into(conn, cache, root, papers, aliases, patterns, stoplist, embedder, with_reviews, neighbors,
                 min_similarity, t0, log) -> dict:
 
     rows = []  # (paper_id, kind, section, text, title)
@@ -79,8 +81,10 @@ def _build_into(conn, cache, root, papers, aliases, patterns, embedder, with_rev
             if canonical.lower() not in known:
                 known.add(canonical.lower())
                 found_datasets.append((canonical, 1))
+        # MICCAI tags are kept as published; author keywords and extracted terms skip the stoplist.
+        found_concepts = [(c, k) for c, k in found_concepts if c and (k in TAG_KINDS or c not in stoplist)]
         conn.executemany("INSERT OR IGNORE INTO paper_concepts VALUES (?, ?, ?)",
-                         [(paper.paper_id, c, k) for c, k in found_concepts if c])
+                         [(paper.paper_id, c, k) for c, k in found_concepts])
         conn.executemany("INSERT OR IGNORE INTO paper_datasets VALUES (?, ?, ?)",
                          [(paper.paper_id, d, n) for d, n in found_datasets])
         rows.append((paper.paper_id, "abstract", "Title and abstract", f"{paper.title}\n\n{paper.abstract}", paper.title))

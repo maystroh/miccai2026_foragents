@@ -1,0 +1,29 @@
+concept,reason
+u-net,generic architecture
+unet,generic architecture
+3d u-net,generic architecture
+nnu-net,generic architecture
+nnunet,generic architecture
+cross-attention,generic building block
+cross attention,generic building block
+self-attention,generic building block
+attention,generic building block
+attention mechanism,generic building block
+multi-head attention,generic building block
+transformer,generic architecture
+transformers,generic architecture
+vision transformer,generic architecture
+vit,generic architecture
+swin transformer,generic architecture
+cnn,generic architecture
+convolutional neural network,generic architecture
+resnet,generic architecture
+resnet-50,generic architecture
+mlp,generic building block
+multilayer perceptron,generic building block
+encoder-decoder,generic building block
+encoder-decoder architecture,generic building block
+backbone,generic building block
+neural network,generic term
+deep neural network,generic term
+deep learning,generic term
