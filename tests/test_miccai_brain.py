@@ -211,6 +211,20 @@ class MiccaiBrainTest(unittest.TestCase):
         self.assertNotIn("Clear writing", texts)
         self.assertTrue(all(len(r["text"]) <= 22 for r in out[0]["reviews"]))
 
+    def test_empty_paper_list_selects_nothing(self):
+        from src.miccai_brain.explore import Explorer
+        ex = Explorer(self.brain.conn, self.root)
+        self.assertEqual(ex.claims("limitation", paper_ids=[]), [])
+        self.assertEqual(ex.limitation_themes(paper_ids=[]), [])
+        self.assertEqual(ex.reviewer_weaknesses(paper_ids=[])["papers_reviewed"], 0)
+        self.assertTrue(ex.claims("limitation"))  # None still means the whole corpus
+
+    def test_weaknesses_keep_subsection_headings(self):
+        from src.miccai_brain.explore import review_weaknesses
+        text = "Strengths: Good.\n\nWeaknesses: Small cohort.\n\nExternal validation: none on a second site."
+        self.assertEqual(review_weaknesses(text), "Small cohort.\n\nExternal validation: none on a second site.")
+        self.assertIsNone(review_weaknesses("Strengths: Good."))
+
     def test_mcp_results_are_compact_single_json(self):
         try:
             import mcp  # noqa: F401

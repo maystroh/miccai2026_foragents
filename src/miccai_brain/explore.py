@@ -64,6 +64,15 @@ def has_claims(conn) -> bool:
     return conn.execute("SELECT 1 FROM paper_claims LIMIT 1").fetchone() is not None
 
 
+def review_weaknesses(text: str) -> str | None:
+    """The weaknesses of one reviewer chunk. corpus.py writes "Strengths: ...\n\nWeaknesses: ..." with
+    weaknesses last, so read to the end: subsection headings inside it ("External validation:") stay in."""
+    if text.startswith("Weaknesses:"):
+        return text[len("Weaknesses:"):].strip()
+    at = text.find("\n\nWeaknesses:")
+    return text[at + len("\n\nWeaknesses:"):].strip() if at >= 0 else None
+
+
 class Explorer:
     """Read-only analytics over a built brain. Pass root to backfill claims from the LLM cache."""
 
@@ -140,7 +149,7 @@ class Explorer:
                about: str | None = None, paper_ids: list[str] | None = None) -> set[str] | None:
         """Intersection of every filter given; None means the whole corpus."""
         pids = None
-        for part in (set(paper_ids) if paper_ids else None,
+        for part in (set(paper_ids) if paper_ids is not None else None,  # [] selects nothing, None means no filter
                      self.papers_for(concept, concept_kind) if concept else None,
                      self.papers_about(about) if about else None,
                      self._scope(modality)):
@@ -164,8 +173,7 @@ class Explorer:
                     continue
                 body = text
                 if part == "weaknesses" and section.startswith("reviewer"):
-                    m = re.search(r"Weaknesses:\s*(.*?)(?:\n\s*\n[A-Z][\w ]{2,40}:|\Z)", text, re.S)
-                    body = m.group(1) if m else ""
+                    body = review_weaknesses(text) or ""
                 body = re.sub(r"\s+", " ", body).strip()
                 if len(body) > max_chars:
                     body = body[:max_chars].rsplit(" ", 1)[0] + " …"
@@ -376,11 +384,10 @@ class Explorer:
         for pid, text in rows:
             if pids is not None and pid not in pids:
                 continue
-            m = re.search(r"Weaknesses:\s*(.*?)(?:\n\s*\n[A-Z][\w ]{2,40}:|\Z)", text, re.S)
-            if not m:
+            weak = review_weaknesses(text)
+            if weak is None:
                 continue
             reviewed.add(pid)
-            weak = m.group(1)
             hit = set()
             for sentence in re.split(r"(?<=[.!?])\s+", weak):
                 low = sentence.lower()
