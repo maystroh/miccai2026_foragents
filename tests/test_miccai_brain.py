@@ -184,6 +184,8 @@ class MiccaiBrainTest(unittest.TestCase):
         names = [t.name for t in asyncio.run(create_server(self.db, self.root).list_tools())]
         self.assertEqual(len(names), len(set(names)))
         self.assertIn("reviewer_weaknesses", names)
+        from src.miccai_brain.guide import TOOLS
+        self.assertEqual(sorted(t[1] for t in TOOLS), sorted(names))  # the guide lists exactly the registered tools
 
     def test_reviewer_weaknesses_themes(self):
         from src.miccai_brain.explore import Explorer

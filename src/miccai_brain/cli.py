@@ -46,6 +46,8 @@ def main(argv=None) -> int:
     d = sub.add_parser("dashboard", help="rewrite the dashboard HTML from the existing database")
     d.add_argument("--html", default=str(DEFAULT_HTML))
     sub.add_parser("serve", help="run the MCP server over stdio")
+    gd = sub.add_parser("guide", help="every brain tool with what it answers and an example")
+    gd.add_argument("--json", action="store_true")
     # Graph analytics (no embedder, no paid model). All print JSON so agents can parse them.
     v = sub.add_parser("vocab", help="most frequent names of one kind (task, method, anatomy, dataset, modality, ...)")
     v.add_argument("kind")
@@ -126,6 +128,10 @@ def main(argv=None) -> int:
                             args.workers, args.force, args.limit, args.max_cost)
         print(json.dumps(usage))
         return 1 if usage["failed"] else 0
+    if args.cmd == "guide":
+        from .guide import guide, guide_markdown
+        print(json.dumps(guide(), indent=1) if args.json else guide_markdown())
+        return 0
     if args.cmd == "serve":
         from .mcp_server import serve
         serve(args.db)

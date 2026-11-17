@@ -16,11 +16,12 @@ except ImportError:  # mcp 1.x
 
 from . import store
 from .explore import ALL_KINDS, Explorer
+from .guide import guide
 from .search import Brain
 
 INSTRUCTIONS = f"""MICCAI brain: all MICCAI 2026 papers (abstract, body, peer reviews) with an extracted graph of
 concepts. Kinds: {', '.join(ALL_KINDS)} ("modality" = topic folder such as MRI, CT, Pathology).
-Cite every claim with its paper_id and title. Start broad (vocabulary, topic_overview), then narrow
+Call brain_guide first for the full tool list. Cite every claim with its paper_id and title. Start broad (vocabulary, topic_overview), then narrow
 (neighbors, matrix, gaps), then read the actual papers (get_paper) before asserting anything.
 A gap is only a candidate until you have searched for it (search_papers) and found no paper doing it."""
 
@@ -143,6 +144,12 @@ def create_server(db_path=store.DEFAULT_DB, root=".") -> FastMCP:
         themes (novelty, baselines, small data, ablation, statistics, ...) with the share of reviewed
         papers hit and short quotes. Use it to stress-test a project plan before writing it."""
         return explorer.reviewer_weaknesses(concept, None, modality, top)
+
+    @server.tool()
+    def brain_guide() -> dict:
+        """Start here: every brain tool with what it answers, its key arguments, an example question and
+        the CLI equivalent, plus the kinds of concepts, typical tool sequences and related commands."""
+        return guide()
 
     return mcp
 

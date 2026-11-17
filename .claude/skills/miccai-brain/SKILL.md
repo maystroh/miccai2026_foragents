@@ -7,6 +7,7 @@ description: Answer research questions and find research ideas from the MICCAI 2
 
 The brain is `reports/miccai_brain/brain.sqlite`, built by `python -m src.miccai_brain build`.
 Use the `miccai-brain` MCP tools when they are connected (the repo's `.mcp.json` registers them);
+Call `brain_guide` (or `/brain-help`) for the full list with examples;
 otherwise run the same queries with the CLI from the repo root, which prints JSON:
 
 | Need | MCP tool | CLI |

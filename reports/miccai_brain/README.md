@@ -213,7 +213,7 @@ claude mcp add miccai-brain -s local -- .venv\Scripts\python.exe -m src.miccai_b
 claude mcp add miccai-brain -s local -- .venv/bin/python -m src.miccai_brain serve             # Linux/macOS
 ```
 
-Then ask, for example: "Using the MICCAI brain, what do MRI papers use for missing modalities?" or
+Type `/brain-help` (or ask the agent to call `brain_guide`) to see every tool with an example. Then ask, for example: "Using the MICCAI brain, what do MRI papers use for missing modalities?" or
 "Find three under-explored ideas in ultrasound and write a project plan for the best one."
 
 | Tool | What it gives the agent |
