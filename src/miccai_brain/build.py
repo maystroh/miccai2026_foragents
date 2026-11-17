@@ -13,7 +13,9 @@ from . import store
 from .chunking import chunk_paper
 from .corpus import load_papers
 from .embed import get_embedder
-from .extract import load_aliases, load_dataset_patterns, normalize_concept, paper_concepts, paper_datasets
+from .extract import (TAG_KINDS, load_aliases, load_dataset_patterns, load_stoplist, normalize_concept,
+                      paper_concepts, paper_datasets, merge_variants,
+                      fold_key, is_stopped, majority_kinds)
 from .extract_llm import llm_concepts, load_cached
 
 
@@ -28,6 +30,7 @@ def build(root: Path, db_path: Path, embedder_spec: str | None = None, modalitie
     papers = load_papers(root, modalities)
     log(f"loaded {len(papers)} papers")
     aliases, patterns = load_aliases(root), load_dataset_patterns(root)
+    stoplist = load_stoplist(root)
     embedder = get_embedder(embedder_spec)
     db_path = Path(db_path)
     cache = store.connect_cache(db_path)
@@ -36,7 +39,7 @@ def build(root: Path, db_path: Path, embedder_spec: str | None = None, modalitie
     tmp_path.unlink(missing_ok=True)
     conn = store.connect(tmp_path)
     try:
-        stats = _build_into(conn, cache, root, papers, aliases, patterns, embedder,
+        stats = _build_into(conn, cache, root, papers, aliases, patterns, stoplist, embedder,
                             with_reviews, neighbors, min_similarity, t0, log)
     except BaseException:
         conn.close()  # Windows cannot delete a file that is still open
@@ -51,10 +54,11 @@ def build(root: Path, db_path: Path, embedder_spec: str | None = None, modalitie
     return stats
 
 
-def _build_into(conn, cache, root, papers, aliases, patterns, embedder, with_reviews, neighbors,
+def _build_into(conn, cache, root, papers, aliases, patterns, stoplist, embedder, with_reviews, neighbors,
                 min_similarity, t0, log) -> dict:
 
     rows = []  # (paper_id, kind, section, text, title)
+    per_paper: dict[str, list[tuple[str, str]]] = {}
     llm_papers = 0
     for paper in papers:
         conn.execute(
@@ -79,8 +83,7 @@ def _build_into(conn, cache, root, papers, aliases, patterns, embedder, with_rev
             if canonical.lower() not in known:
                 known.add(canonical.lower())
                 found_datasets.append((canonical, 1))
-        conn.executemany("INSERT OR IGNORE INTO paper_concepts VALUES (?, ?, ?)",
-                         [(paper.paper_id, c, k) for c, k in found_concepts if c])
+        per_paper[paper.paper_id] = [(c, k) for c, k in found_concepts if c]
         conn.executemany("INSERT OR IGNORE INTO paper_datasets VALUES (?, ?, ?)",
                          [(paper.paper_id, d, n) for d, n in found_datasets])
         rows.append((paper.paper_id, "abstract", "Title and abstract", f"{paper.title}\n\n{paper.abstract}", paper.title))
@@ -90,7 +93,19 @@ def _build_into(conn, cache, root, papers, aliases, patterns, embedder, with_rev
             for review in paper.reviews:
                 label = review.role.replace("_", " ") + (f" ({review.rating})" if review.rating else "")
                 rows.append((paper.paper_id, "review", label, review.text, paper.title))
-    log(f"{len(rows)} chunks")
+    # MICCAI tags are kept as published. Other concepts: drop stoplisted ones (any spelling), collapse
+    # spelling variants (hyphens, plurals) to the most common form, and give each concept one kind.
+    stop_keys = {fold_key(s) for s in stoplist}
+    free = {pid: [(c, k) for c, k in pairs if k not in TAG_KINDS and not is_stopped(c, stop_keys)]
+            for pid, pairs in per_paper.items()}
+    variants = merge_variants(free)
+    free = {pid: [(variants.get(c, c), k) for c, k in pairs] for pid, pairs in free.items()}
+    kinds = majority_kinds(free)
+    for pid, pairs in per_paper.items():
+        tags = [(c, k) for c, k in pairs if k in TAG_KINDS]
+        conn.executemany("INSERT OR IGNORE INTO paper_concepts VALUES (?, ?, ?)",
+                         [(pid, c, k) for c, k in tags] + [(pid, c, kinds[c]) for c, _ in free[pid]])
+    log(f"{len(rows)} chunks, {len(variants)} concept spellings merged")
 
     # Embed, reusing cached vectors for unchanged text.
     hashes = [_hash(embedder.spec, r[3]) for r in rows]

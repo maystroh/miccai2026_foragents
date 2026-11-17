@@ -53,6 +53,8 @@ def make_corpus(root: Path):
     inputs = root / "reports" / "miccai_brain" / "inputs"
     inputs.mkdir(parents=True)
     (inputs / "datasets.csv").write_text("dataset,pattern\nBraTS,\\bBraTS\\b\nMIMIC-IV,\\bMIMIC-IV\\b\n", encoding="utf-8")
+    (inputs / "concept_stoplist.csv").write_text("concept,reason\ntransformer,generic\nsegmentation,generic\n",
+                                                  encoding="utf-8")
     (inputs / "concept_aliases.csv").write_text("alias,concept\nmissing modalities,missing modality\n", encoding="utf-8")
 
 
@@ -109,8 +111,15 @@ class MiccaiBrainTest(unittest.TestCase):
     def test_cached_llm_extraction_merges_concepts_and_datasets(self):
         paper = self.brain.paper("0003-Paper1003")
         kinds = {(c["concept"], c["kind"]) for c in paper["concepts"]}
-        self.assertIn(("transformer", "method"), kinds)
+        self.assertIn("mortality prediction", {c for c, _ in kinds})
         self.assertEqual(sorted(d["dataset"] for d in paper["datasets"]), ["MIMIC-IV", "eICU"])
+
+    def test_stoplist_drops_generic_terms_but_keeps_miccai_tags(self):
+        concepts = {(c["concept"], c["kind"]) for c in self.brain.paper("0003-Paper1003")["concepts"]}
+        self.assertNotIn(("transformer", "method"), concepts)
+        self.assertIn(("segmentation", "application"), concepts)  # MICCAI tag kept
+        keywords = {c["concept"] for c in self.brain.paper("0001-Paper1001")["concepts"] if c["kind"] == "keyword"}
+        self.assertNotIn("segmentation", keywords)
 
     def test_graph_export_links_shared_concepts(self):
         graph = export_graph(self.brain.conn)
@@ -118,6 +127,42 @@ class MiccaiBrainTest(unittest.TestCase):
         self.assertIn("missing modality", names)  # shared by two papers
         self.assertEqual({d["n"] for d in graph["datasets"]}, {"BraTS", "MIMIC-IV", "eICU"})
         self.assertTrue(graph["edges"])
+
+
+class ConceptMergeTest(unittest.TestCase):
+    def test_spelling_variants_fold_to_the_most_common_form(self):
+        from src.miccai_brain.extract import fold_key, merge_variants
+        self.assertEqual(fold_key("Multi-modal LLMs"), fold_key("multimodal llm"))
+        self.assertNotEqual(fold_key("class"), fold_key("cla"))
+        mapping = merge_variants({"a": [("f1 score", "metric")], "b": [("f1 score", "metric")],
+                                  "c": [("f1-score", "metric"), ("state-space models", "keyword")],
+                                  "d": [("state space model", "method")]})
+        self.assertEqual(mapping, {"f1-score": "f1 score", "state-space models": "state space model"})
+
+    def test_stoplist_matches_any_spelling(self):
+        from src.miccai_brain.extract import fold_key, is_stopped
+        keys = {fold_key(s) for s in ["3d u-net", "resnet-50", "multilayer perceptron", "neural network", "lung"]}
+        for term in ["3d unet", "resnet50", "multi-layer perceptron", "neural networks", "lungs"]:
+            self.assertTrue(is_stopped(term, keys), term)
+        self.assertFalse(is_stopped("liver", keys))
+
+    def test_majority_kind_keeps_a_method_visible(self):
+        from src.miccai_brain.extract import majority_kinds
+        per_paper = {f"m{i}": [("grad-cam", "method")] for i in range(9)}
+        per_paper.update({f"x{i}": [("grad-cam", "metric")] for i in range(2)})
+        per_paper["t"] = [("probe", "metric")]
+        per_paper["u"] = [("probe", "method")]
+        self.assertEqual(majority_kinds(per_paper), {"grad-cam": "method", "probe": "method"})
+        # Merged spellings in one paper count once.
+        merged = {"a": [("grad-cam", "method")], "b": [("grad-cam", "method")], "c": [("grad-cam", "metric")] * 3}
+        self.assertEqual(majority_kinds(merged), {"grad-cam": "method"})
+
+    def test_body_tags_are_split_and_win_over_keywords(self):
+        from src.miccai_brain.corpus import Paper
+        from src.miccai_brain.extract import paper_concepts
+        paper = Paper(paper_id="p", title="t", paper_url="u", body="Abdomen; Brain", keywords=["Brain", "Registration"])
+        self.assertEqual(paper_concepts(paper, {}),
+                         [("abdomen", "body"), ("brain", "body"), ("registration", "keyword")])
 
 
 if __name__ == "__main__":

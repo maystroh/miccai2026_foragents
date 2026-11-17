@@ -81,9 +81,16 @@ A **concept** is a short lowercase term that papers share. It comes from three p
 |---|---|---|
 | The authors' own keyword line in the paper | "multiple sclerosis" | Author keyword |
 | MICCAI's Body / Applications / Machine Learning tags | "brain", "computer-aided diagnosis" | MICCAI tag |
-| Claude Haiku 5.5 | task "brain tumor segmentation", method "diffusion model", anatomy "heart", metric "dice score" | Extracted task, method, anatomy, metric |
+| Claude Haiku 5.5 | task "brain tumor segmentation", method "diffusion model", anatomy "left ventricle", metric "dice score" | Extracted task, method, anatomy, metric |
 
-Synonyms are merged with `inputs/concept_aliases.csv` (for example "cnns" becomes "cnn").
+Synonyms and acronyms are merged with `inputs/concept_aliases.csv` (for example "lora" becomes
+"low-rank adaptation" and "auroc" becomes "auc"). Spelling variants that differ only by hyphens,
+spaces or a plural "s" ("f1-score", "state-space models") are merged automatically into the form
+most papers use. A paper with several Body tags ("Abdomen; Brain") gets one tag per organ.
+Organ names that only repeat a Body tag (brain, lung, heart, breast, eye, ...) are dropped too,
+while finer structures such as liver, prostate or hippocampus are kept. Generic building blocks that almost every paper uses (u-net, nnu-net, transformer, vit,
+cross-attention, cnn, ...) are dropped with `inputs/concept_stoplist.csv`, because they would
+link nearly everything. MICCAI tags are kept as published. Add a row to drop another term.
 Metrics and MICCAI tags are hidden by default in the dashboard because almost every paper has
 them; tick "MICCAI tags and metrics" to show them.
 

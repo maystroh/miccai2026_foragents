@@ -14,7 +14,9 @@ def export_graph(conn, min_concept_papers: int = 2, max_abstract: int = 900) -> 
     index = {p["paper_id"]: i for i, p in enumerate(papers)}
 
     concept_rows = conn.execute(
-        "SELECT concept, kind, COUNT(*) n FROM paper_concepts GROUP BY concept HAVING n >= ? ORDER BY n DESC",
+        "SELECT concept, COUNT(*) n, (SELECT kind FROM paper_concepts k WHERE k.concept = p.concept GROUP BY kind"
+        " ORDER BY COUNT(*) DESC, kind LIMIT 1) kind FROM paper_concepts p GROUP BY concept HAVING n >= ?"
+        " ORDER BY n DESC, concept",
         (min_concept_papers,)).fetchall()
     concepts = [{"n": r["concept"], "k": r["kind"], "c": r["n"]} for r in concept_rows]
     cidx = {c["n"]: i for i, c in enumerate(concepts)}

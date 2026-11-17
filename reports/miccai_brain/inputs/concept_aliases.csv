@@ -28,3 +28,88 @@ gnns,graph neural network
 domain generalisation,domain generalization
 image segmentation,segmentation
 medical image segmentation,segmentation
+lora,low-rank adaptation
+auroc,auc
+roc-auc,auc
+roc auc,auc
+auc-roc,auc
+area under the roc curve,auc
+area under the curve,auc
+pr-auc,auprc
+prauc,auprc
+pr auc,auprc
+aucpr,auprc
+area under the precision-recall curve,auprc
+hausdorff distance 95,hd95
+95% hausdorff distance,hd95
+95th percentile hausdorff distance,hd95
+hd 95,hd95
+intersection over union,iou
+mean intersection over union,miou
+mean intersection-over-union,miou
+mean iou,miou
+f1,f1 score
+macro f1-score,macro-f1
+macro f1 score,macro-f1
+weighted f1,weighted f1 score
+dice similarity coefficient,dice score
+dice coefficient,dice score
+dice,dice score
+dsc,dice score
+structural similarity index,ssim
+structural similarity index measure,ssim
+peak signal-to-noise ratio,psnr
+fréchet inception distance,fid
+frechet inception distance,fid
+mean squared error,mse
+root mean squared error,rmse
+root mean square error,rmse
+normalized root mean square error,nrmse
+normalized root mean squared error,nrmse
+average symmetric surface distance,assd
+normalized surface distance,normalized surface dice
+nsd,normalized surface dice
+pearson correlation coefficient,pearson correlation
+spearman correlation coefficient,spearman correlation
+spearman rank correlation,spearman correlation
+spearman rank correlation coefficient,spearman correlation
+cohen kappa,cohen's kappa
+recall at k,recall@k
+segment anything model 2,sam2
+contrastive language-image pretraining,clip
+contrastive language-image pre-training,clip
+gan,generative adversarial network
+gans,generative adversarial network
+generative adversarial networks,generative adversarial network
+vae,variational autoencoder
+mllm,multimodal large language model
+mllms,multimodal large language model
+large language model (llm),llm
+medical vlms,medical vision-language models
+moe,mixture of experts
+mil,multiple instance learning
+attention-based multiple instance learning,attention-based mil
+abmil,attention-based mil
+gcn,graph convolutional network
+rag,retrieval-augmented generation
+cot,chain-of-thought
+chain-of-thought reasoning,chain-of-thought
+chain-of-thought prompting,chain-of-thought
+gaussian splatting,3d gaussian splatting
+3dgs,3d gaussian splatting
+nerf,neural radiance field
+dti,diffusion tensor imaging
+electroencephalography,eeg
+electroencephalography (eeg),eeg
+functional mri,fmri
+whole slide imaging,whole slide image
+wsi,whole slide image
+wsis,whole slide image
+xai,explainable ai
+explainable artificial intelligence,explainable ai
+llm-as-judge,llm-as-a-judge
+federated averaging,fedavg
+latent diffusion,latent diffusion model
+cxr,chest x-ray
+state space model (ssm),state space model
+ssm,state space model

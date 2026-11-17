@@ -1,0 +1,55 @@
+concept,reason
+u-net,generic architecture
+unet,generic architecture
+3d u-net,generic architecture
+nnu-net,generic architecture
+nnunet,generic architecture
+cross-attention,generic building block
+cross attention,generic building block
+self-attention,generic building block
+attention,generic building block
+attention mechanism,generic building block
+multi-head attention,generic building block
+transformer,generic architecture
+transformers,generic architecture
+vision transformer,generic architecture
+vit,generic architecture
+swin transformer,generic architecture
+cnn,generic architecture
+convolutional neural network,generic architecture
+resnet,generic architecture
+resnet-50,generic architecture
+mlp,generic building block
+multilayer perceptron,generic building block
+encoder-decoder,generic building block
+encoder-decoder architecture,generic building block
+backbone,generic building block
+neural network,generic term
+deep neural network,generic term
+deep learning,generic term
+brain,organ covered by a MICCAI body tag
+lung,organ covered by a MICCAI body tag
+chest,organ covered by a MICCAI body tag
+thorax,organ covered by a MICCAI body tag
+heart,organ covered by a MICCAI body tag
+cardiac,organ covered by a MICCAI body tag
+breast,organ covered by a MICCAI body tag
+eye,organ covered by a MICCAI body tag
+retina,organ covered by a MICCAI body tag
+skin,organ covered by a MICCAI body tag
+spine,organ covered by a MICCAI body tag
+abdomen,organ covered by a MICCAI body tag
+abdominal organs,organ covered by a MICCAI body tag
+abdominal cavity,organ covered by a MICCAI body tag
+pelvis,organ covered by a MICCAI body tag
+head and neck,organ covered by a MICCAI body tag
+head & neck,organ covered by a MICCAI body tag
+whole body,organ covered by a MICCAI body tag
+whole-body,organ covered by a MICCAI body tag
+multi-organ,organ covered by a MICCAI body tag
+multiple organs,organ covered by a MICCAI body tag
+vasculature,organ covered by a MICCAI body tag
+blood vessels,organ covered by a MICCAI body tag
+vessels,organ covered by a MICCAI body tag
+fetus,organ covered by a MICCAI body tag
+musculoskeletal system,organ covered by a MICCAI body tag
